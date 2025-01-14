@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { Toaster } from 'react-hot-toast'
 import app from './firebase/config'
 import Navbar from './components/Navbar'
 import LandingPage from './components/LandingPage'
@@ -8,6 +9,9 @@ import Login from './components/Login'
 import Register from './components/Register'
 import DashboardLayout from './components/Dashboard/DashboardLayout'
 import Overview from './components/Dashboard/Overview'
+import Submissions from './components/Dashboard/Submissions'
+import Reviews from './components/Dashboard/Reviews'
+import Users from './components/Dashboard/Users'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -30,7 +34,8 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
+        <Toaster position="top-right" />
         <Navbar isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />
         <Routes>
           <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" /> : <LandingPage />} />
@@ -53,9 +58,9 @@ function App() {
             }
           >
             <Route index element={<Overview />} />
-            <Route path="submissions" element={<div>Submissions</div>} />
-            <Route path="reviews" element={<div>Reviews</div>} />
-            <Route path="users" element={<div>Users</div>} />
+            <Route path="submissions" element={<Submissions />} />
+            <Route path="reviews" element={<Reviews />} />
+            <Route path="users" element={<Users />} />
           </Route>
         </Routes>
       </div>

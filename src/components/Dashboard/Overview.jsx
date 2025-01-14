@@ -1,8 +1,33 @@
+import { useState, useEffect } from 'react'
+import { collection, getDocs } from 'firebase/firestore'
+import { db } from '../../firebase/config'
+
 const Overview = () => {
+  const [submissionCount, setSubmissionCount] = useState(0)
+  const [pendingCount, setPendingCount] = useState(0)
+  const [completedCount, setCompletedCount] = useState(0)
+
+  useEffect(() => {
+    fetchStats()
+  }, [])
+
+  const fetchStats = async () => {
+    try {
+      const submissionsSnapshot = await getDocs(collection(db, 'submissions'))
+      const submissions = submissionsSnapshot.docs.map(doc => doc.data())
+
+      setSubmissionCount(submissions.length)
+      setPendingCount(submissions.filter(s => s.status === 'pending').length)
+      setCompletedCount(submissions.filter(s => s.status === 'completed').length)
+    } catch (error) {
+      console.error('Error fetching stats:', error)
+    }
+  }
+
   const stats = [
-    { name: 'Total Submissions', stat: '12' },
-    { name: 'Pending Reviews', stat: '4' },
-    { name: 'Completed Reviews', stat: '8' },
+    { name: 'Total Submissions', stat: submissionCount.toString() },
+    { name: 'Pending Reviews', stat: pendingCount.toString() },
+    { name: 'Completed Reviews', stat: completedCount.toString() },
   ]
 
   return (

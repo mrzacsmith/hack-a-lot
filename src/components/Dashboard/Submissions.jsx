@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { collection, addDoc, getDocs } from 'firebase/firestore'
+import { collection, addDoc, getDocs, doc, getDoc } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 import { db } from '../../firebase/config'
 import toast from 'react-hot-toast'
@@ -9,21 +9,52 @@ const Submissions = () => {
   const [submissions, setSubmissions] = useState([])
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [userRole, setUserRole] = useState(null)
 
   useEffect(() => {
-    fetchSubmissions()
+    const auth = getAuth()
+    if (auth.currentUser) {
+      fetchUserRole(auth.currentUser.uid)
+      fetchSubmissions()
+    }
   }, [])
+
+  const fetchUserRole = async (userId) => {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', userId))
+      if (userDoc.exists()) {
+        setUserRole(userDoc.data().role)
+      }
+    } catch (error) {
+      console.error('Error fetching user role:', error)
+    }
+  }
 
   const fetchSubmissions = async () => {
     try {
+      const auth = getAuth()
+      const userId = auth.currentUser.uid
+      const userDoc = await getDoc(doc(db, 'users', userId))
+      const role = userDoc.data()?.role
+
       const submissionsSnapshot = await getDocs(collection(db, 'submissions'))
-      const submissionsList = submissionsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }))
+      const submissionsList = submissionsSnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+        .filter(submission => {
+          // If admin or reviewer, show all submissions
+          if (role === 'admin' || role === 'reviewer') return true
+          // Otherwise, only show user's own submissions
+          return submission.userId === userId
+        })
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+
       setSubmissions(submissionsList)
     } catch (error) {
       console.error('Error fetching submissions:', error)
+      toast.error('Error loading submissions')
     }
   }
 

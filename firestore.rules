@@ -2,11 +2,45 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /submissions/{submission} {
+    // Helper functions
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isReviewer() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'reviewer';
+    }
+    
+    function isOwner(submissionData) {
+      return request.auth.uid == submissionData.userId;
+    }
+    
+    function hasAccess(submissionData) {
+      return isAdmin() || isReviewer() || isOwner(submissionData);
+    }
+
+    // Users collection
+    match /users/{userId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null 
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Submissions collection
+    match /submissions/{submission} {
+      allow list: if request.auth != null;  // Allow listing for all authenticated users
+      
+      allow create: if request.auth != null 
                    && request.resource.data.userId == request.auth.uid
                    && request.resource.data.userEmail == request.auth.token.email;
+      
+      allow get: if request.auth != null && hasAccess(resource.data);
+      
+      allow update: if request.auth != null 
+                   && hasAccess(resource.data)
+                   && (isAdmin() || isReviewer() || 
+                       (isOwner(resource.data) && request.resource.data.status == resource.data.status));
+      
+      allow delete: if request.auth != null && (isAdmin() || isOwner(resource.data));
     }
   }
 } 

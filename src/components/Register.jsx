@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'
+import { doc, setDoc } from 'firebase/firestore'
+import { db } from '../firebase/config'
 import app from '../firebase/config'
 
 const Register = ({ setIsAuthenticated }) => {
@@ -24,6 +26,14 @@ const Register = ({ setIsAuthenticated }) => {
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+
+      // Create user document with default role
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+        email: userCredential.user.email,
+        role: 'user', // Default role
+        createdAt: new Date().toISOString()
+      })
+
       setIsAuthenticated(true)
       navigate('/dashboard')
     } catch (error) {

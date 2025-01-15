@@ -26,7 +26,7 @@ const Reviews = () => {
         const submissionsList = await Promise.all(submissionsSnapshot.docs.map(async doc => {
           const data = doc.data()
           // Fetch the user's email for each submission
-          const userDoc = await getDoc(doc.ref.parent.parent.collection('users').doc(data.userId))
+          const userDoc = await getDoc(doc(db, 'users', data.userId))
           return {
             id: doc.id,
             ...data,

@@ -45,10 +45,17 @@ service cloud.firestore {
                    request.resource.data.email == request.auth.token.email &&
                    request.resource.data.createdAt is timestamp;
       
-      // Allow role updates by admins and super admin
+      // Allow users to update their own profile data and admins to update roles
       allow update: if request.auth != null && (
-        // Users can update their own non-role data
-        (request.auth.uid == userId && !("role" in request.resource.data)) ||
+        // Users can update their own profile data
+        (request.auth.uid == userId && (
+          // Only allow updating these specific fields
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['firstName', 'lastName', 'photoURL', 'emailNotifications']) &&
+          // Preserve existing role and email
+          request.resource.data.role == resource.data.role &&
+          request.resource.data.email == resource.data.email
+        )) ||
         // Super admin can update any role
         (request.auth.token.email == 'zac@codeshock.dev') ||
         // Admins can update roles except other admins

@@ -7,11 +7,13 @@ import Navbar from './components/Navbar'
 import LandingPage from './components/LandingPage'
 import Login from './components/Login'
 import Register from './components/Register'
+import PasswordReset from './components/PasswordReset'
 import DashboardLayout from './components/Dashboard/DashboardLayout'
 import Overview from './components/Dashboard/Overview'
 import Submissions from './components/Dashboard/Submissions'
 import Reviews from './components/Dashboard/Reviews'
 import Users from './components/Dashboard/Users'
+import Settings from './components/Settings'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -47,13 +49,17 @@ function App() {
             path="/register"
             element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register setIsAuthenticated={setIsAuthenticated} />}
           />
+          <Route
+            path="/reset-password"
+            element={isAuthenticated ? <Navigate to="/dashboard" /> : <PasswordReset />}
+          />
 
           {/* Protected Dashboard Routes */}
           <Route
             path="/dashboard"
             element={
               <ProtectedRoute isAuthenticated={isAuthenticated}>
-                <DashboardLayout />
+                <DashboardLayout setIsAuthenticated={setIsAuthenticated} />
               </ProtectedRoute>
             }
           >
@@ -62,6 +68,16 @@ function App() {
             <Route path="reviews" element={<Reviews />} />
             <Route path="users" element={<Users />} />
           </Route>
+
+          {/* Protected Settings Route */}
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </div>
     </Router>

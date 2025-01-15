@@ -4,11 +4,13 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Helper functions
     function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return userDoc != null && userDoc.data != null && userDoc.data.role == 'admin';
     }
     
     function isReviewer() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'reviewer';
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return userDoc != null && userDoc.data != null && userDoc.data.role == 'reviewer';
     }
     
     function isOwner(submissionData) {
@@ -27,20 +29,41 @@ service cloud.firestore {
       return status in ['pending', 'approved', 'rejected', 'needs_revision'];
     }
 
+    function isSuperAdmin() {
+      return request.auth.token.email == 'zac@codeshock.dev';
+    }
+
     // Users collection
     match /users/{userId} {
-      allow read: if request.auth != null;
-      // Only allow users to update their own data, except for role changes which only admins can do
-      allow update: if request.auth != null && (
-        (request.auth.uid == userId && !("role" in request.resource.data)) ||
-        (isAdmin() && isValidRole(request.resource.data.role))
-      );
-      // Only allow users to create their own document with 'user' role
+      // Allow reading and listing user documents for all authenticated users
+      allow read, list: if request.auth != null;
+      
+      // Allow users to create their own document with 'user' role
       allow create: if request.auth != null && 
                    request.auth.uid == userId && 
                    request.resource.data.role == 'user' &&
                    request.resource.data.email == request.auth.token.email &&
                    request.resource.data.createdAt is timestamp;
+      
+      // Allow role updates by admins and super admin
+      allow update: if request.auth != null && (
+        // Users can update their own non-role data
+        (request.auth.uid == userId && !("role" in request.resource.data)) ||
+        // Super admin can update any role
+        (request.auth.token.email == 'zac@codeshock.dev') ||
+        // Admins can update roles except other admins
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' && 
+         request.resource.data.role in ['user', 'reviewer', 'admin'] && 
+         !(resource.data.role == 'admin' && request.auth.token.email != 'zac@codeshock.dev'))
+      );
+    }
+
+    // Allow listing users collection for admins and super admin
+    match /users/{document=**} {
+      allow list: if request.auth != null && (
+        request.auth.token.email == 'zac@codeshock.dev' || 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
     }
 
     // Submissions collection

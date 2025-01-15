@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import app from '../firebase/config'
 
@@ -22,14 +22,60 @@ const Login = ({ setIsAuthenticated }) => {
 
       // Check if user document exists, if not create it
       const userRef = doc(db, 'users', userCredential.user.uid)
-      const userDoc = await getDoc(userRef)
+      let userDoc;
 
-      if (!userDoc.exists()) {
-        await setDoc(userRef, {
-          email: userCredential.user.email,
-          role: 'user',
-          createdAt: new Date().toISOString()
-        })
+      try {
+        const maxRetries = 3;
+        let retryCount = 0;
+
+        while (retryCount < maxRetries) {
+          try {
+            userDoc = await getDoc(userRef);
+            break;
+          } catch (error) {
+            if (error.code === 'failed-precondition' || error.code === 'unavailable') {
+              // Firestore is offline, wait and retry
+              await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+              retryCount++;
+              if (retryCount === maxRetries) {
+                throw new Error('Failed to fetch user document after multiple retries');
+              }
+            } else {
+              throw error;
+            }
+          }
+        }
+
+        if (!userDoc.exists()) {
+          let success = false;
+          retryCount = 0;
+
+          while (retryCount < maxRetries && !success) {
+            try {
+              await setDoc(userRef, {
+                email: userCredential.user.email,
+                role: 'user',
+                createdAt: serverTimestamp()
+              });
+              success = true;
+            } catch (error) {
+              if (error.code === 'failed-precondition' || error.code === 'unavailable') {
+                await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+                retryCount++;
+              } else {
+                throw error;
+              }
+            }
+          }
+
+          if (!success) {
+            throw new Error('Failed to create user document after multiple retries');
+          }
+        }
+      } catch (error) {
+        console.error('Error handling user document:', error);
+        setError('Login successful but profile access failed. Please try again.');
+        return;
       }
 
       setIsAuthenticated(true)

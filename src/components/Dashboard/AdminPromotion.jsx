@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getAuth } from 'firebase/auth'
-import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore'
+import { doc, getDoc, updateDoc, collection, getDocs, setDoc } from 'firebase/firestore'
 import { db } from '../../firebase/config'
 import toast from 'react-hot-toast'
 
@@ -13,20 +13,39 @@ const AdminPromotion = () => {
   useEffect(() => {
     const fetchData = async () => {
       if (auth.currentUser) {
-        // Get current user's role
-        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid))
-        if (userDoc.exists()) {
-          setCurrentUserRole(userDoc.data().role)
-        }
+        try {
+          // Get current user's role
+          const userRef = doc(db, 'users', auth.currentUser.uid)
+          const userDoc = await getDoc(userRef)
 
-        // If user is admin or super admin, fetch all users
-        if (userDoc.data().role === 'admin' || auth.currentUser.email === import.meta.env.VITE_SUPER_ADMIN_EMAIL) {
-          const usersSnapshot = await getDocs(collection(db, 'users'))
-          const usersData = usersSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }))
-          setUsers(usersData)
+          // If user document doesn't exist, create it
+          if (!userDoc.exists()) {
+            const userData = {
+              email: auth.currentUser.email,
+              role: 'user',
+              createdAt: new Date().toISOString()
+            }
+            await setDoc(userRef, userData)
+            setCurrentUserRole('user')
+          } else {
+            setCurrentUserRole(userDoc.data().role)
+          }
+
+          // If user is admin or super admin, fetch all users
+          const isAdmin = userDoc.exists() && userDoc.data().role === 'admin'
+          const isSuperAdmin = auth.currentUser.email === import.meta.env.VITE_SUPER_ADMIN_EMAIL
+
+          if (isAdmin || isSuperAdmin) {
+            const usersSnapshot = await getDocs(collection(db, 'users'))
+            const usersData = usersSnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }))
+            setUsers(usersData)
+          }
+        } catch (error) {
+          console.error('Error fetching data:', error)
+          toast.error('Error loading user data')
         }
 
         setIsLoading(false)
@@ -37,7 +56,8 @@ const AdminPromotion = () => {
 
   const updateUserRole = async (userId, newRole) => {
     try {
-      await updateDoc(doc(db, 'users', userId), {
+      const userRef = doc(db, 'users', userId)
+      await updateDoc(userRef, {
         role: newRole
       })
 

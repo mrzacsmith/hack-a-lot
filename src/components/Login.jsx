@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { db } from '../firebase/config'
 import app from '../firebase/config'
 
 const Login = ({ setIsAuthenticated }) => {
@@ -17,6 +19,19 @@ const Login = ({ setIsAuthenticated }) => {
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
+
+      // Check if user document exists, if not create it
+      const userRef = doc(db, 'users', userCredential.user.uid)
+      const userDoc = await getDoc(userRef)
+
+      if (!userDoc.exists()) {
+        await setDoc(userRef, {
+          email: userCredential.user.email,
+          role: 'user',
+          createdAt: new Date().toISOString()
+        })
+      }
+
       setIsAuthenticated(true)
       navigate('/dashboard')
     } catch (error) {

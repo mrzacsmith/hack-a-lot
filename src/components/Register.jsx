@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'
-import { doc, setDoc } from 'firebase/firestore'
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import app from '../firebase/config'
 
@@ -28,11 +28,38 @@ const Register = ({ setIsAuthenticated }) => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
 
       // Create user document with default role
-      await setDoc(doc(db, 'users', userCredential.user.uid), {
-        email: userCredential.user.email,
-        role: 'user', // Default role
-        createdAt: new Date().toISOString()
-      })
+      try {
+        const maxRetries = 3;
+        let retryCount = 0;
+        let success = false;
+
+        while (retryCount < maxRetries && !success) {
+          try {
+            await setDoc(doc(db, 'users', userCredential.user.uid), {
+              email: userCredential.user.email,
+              role: 'user', // Default role
+              createdAt: serverTimestamp()
+            });
+            success = true;
+          } catch (error) {
+            if (error.code === 'failed-precondition' || error.code === 'unavailable') {
+              // Firestore is offline, wait and retry
+              await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+              retryCount++;
+            } else {
+              throw error;
+            }
+          }
+        }
+
+        if (!success) {
+          throw new Error('Failed to create user document after multiple retries');
+        }
+      } catch (error) {
+        console.error('Error creating user document:', error);
+        setError('Account created but profile setup failed. Please try logging in again.');
+        return;
+      }
 
       setIsAuthenticated(true)
       navigate('/dashboard')

@@ -23,12 +23,12 @@ const Reviews = () => {
     const fetchSubmissions = async () => {
       try {
         const submissionsSnapshot = await getDocs(collection(db, 'submissions'))
-        const submissionsList = await Promise.all(submissionsSnapshot.docs.map(async doc => {
-          const data = doc.data()
+        const submissionsList = await Promise.all(submissionsSnapshot.docs.map(async docSnapshot => {
+          const data = docSnapshot.data()
           // Fetch the user's email for each submission
-          const userDoc = await getDoc(doc.ref.parent.parent.collection('users').doc(data.userId))
+          const userDoc = await getDoc(doc(db, 'users', data.userId))
           return {
-            id: doc.id,
+            id: docSnapshot.id,
             ...data,
             userEmail: userDoc.exists() ? userDoc.data().email : 'Unknown'
           }
@@ -148,8 +148,13 @@ const Reviews = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-indigo-600 hover:text-indigo-900"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        window.open(submission.url, '_blank', 'noopener,noreferrer')
+                      }}
                     >
-                      {submission.url}
+                      {new URL(submission.url).hostname}
+                      <span className="ml-1 text-gray-500">↗</span>
                     </a>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

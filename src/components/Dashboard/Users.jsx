@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getAuth } from 'firebase/auth'
-import { collection, doc, getDoc, getDocs, updateDoc } from 'firebase/firestore'
+import { doc, getDoc, updateDoc, collection, getDocs, setDoc } from 'firebase/firestore'
 import { db } from '../../firebase/config'
 import toast from 'react-hot-toast'
 
@@ -11,49 +11,53 @@ const Users = () => {
   const auth = getAuth()
 
   useEffect(() => {
-    const fetchCurrentUserRole = async () => {
+    const fetchData = async () => {
       if (auth.currentUser) {
-        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid))
-        if (userDoc.exists()) {
-          setCurrentUserRole(userDoc.data().role)
-        }
-      }
-    }
+        try {
+          // Get current user's role
+          const userRef = doc(db, 'users', auth.currentUser.uid)
+          const userDoc = await getDoc(userRef)
 
-    const fetchUsers = async () => {
-      try {
-        const usersSnapshot = await getDocs(collection(db, 'users'))
-        const usersList = usersSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }))
-        setUsers(usersList)
-      } catch (error) {
-        console.error('Error fetching users:', error)
-        toast.error('Error loading users')
-      } finally {
+          // If user document doesn't exist, create it
+          if (!userDoc.exists()) {
+            const userData = {
+              email: auth.currentUser.email,
+              role: 'user',
+              createdAt: new Date().toISOString()
+            }
+            await setDoc(userRef, userData)
+            setCurrentUserRole('user')
+          } else {
+            setCurrentUserRole(userDoc.data().role)
+          }
+
+          // If user is admin or super admin, fetch all users
+          const isAdmin = userDoc.exists() && userDoc.data().role === 'admin'
+          const isSuperAdmin = auth.currentUser.email === import.meta.env.VITE_SUPER_ADMIN_EMAIL
+
+          if (isAdmin || isSuperAdmin) {
+            const usersSnapshot = await getDocs(collection(db, 'users'))
+            const usersData = usersSnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }))
+            setUsers(usersData)
+          }
+        } catch (error) {
+          console.error('Error fetching data:', error)
+          toast.error('Error loading user data')
+        }
+
         setIsLoading(false)
       }
     }
-
-    fetchCurrentUserRole()
-    fetchUsers()
+    fetchData()
   }, [auth.currentUser])
 
-  const handleRoleChange = async (userId, newRole) => {
-    if (currentUserRole !== 'admin') {
-      toast.error('Only admins can change user roles')
-      return
-    }
-
-    // Prevent admin from changing their own role
-    if (userId === auth.currentUser.uid) {
-      toast.error('You cannot change your own role')
-      return
-    }
-
+  const updateUserRole = async (userId, newRole) => {
     try {
-      await updateDoc(doc(db, 'users', userId), {
+      const userRef = doc(db, 'users', userId)
+      await updateDoc(userRef, {
         role: newRole
       })
 
@@ -62,14 +66,14 @@ const Users = () => {
         user.id === userId ? { ...user, role: newRole } : user
       ))
 
-      toast.success(`User role updated to ${newRole}`)
+      toast.success(`Successfully updated user role to ${newRole}`)
     } catch (error) {
-      console.error('Error updating user role:', error)
-      toast.error('Failed to update user role')
+      console.error('Error updating role:', error)
+      toast.error('Failed to update role')
     }
   }
 
-  if (currentUserRole !== 'admin') {
+  if (currentUserRole !== 'admin' && auth.currentUser?.email !== import.meta.env.VITE_SUPER_ADMIN_EMAIL) {
     return (
       <div className="p-4">
         <h1 className="text-2xl font-bold text-gray-900 mb-4">Users</h1>
@@ -99,6 +103,9 @@ const Users = () => {
                   Email
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  User ID
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Current Role
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -112,15 +119,24 @@ const Users = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {user.email}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
+                    {user.id}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
                     {user.role}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <select
                       value={user.role}
-                      onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                      disabled={user.id === auth.currentUser.uid}
-                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                      onChange={(e) => updateUserRole(user.id, e.target.value)}
+                      disabled={
+                        // Disable if:
+                        // 1. It's the current user
+                        // 2. The target user is an admin and current user is not super admin
+                        user.id === auth.currentUser.uid ||
+                        (user.role === 'admin' && auth.currentUser.email !== import.meta.env.VITE_SUPER_ADMIN_EMAIL)
+                      }
+                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md disabled:bg-gray-100"
                     >
                       <option value="user">User</option>
                       <option value="reviewer">Reviewer</option>

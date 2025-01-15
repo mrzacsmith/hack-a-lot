@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../../firebase/config'
-import AdminPromotion from './AdminPromotion.jsx'
 
 const Overview = () => {
   const [stats, setStats] = useState({
@@ -48,10 +47,6 @@ const Overview = () => {
           <h3 className="text-lg font-medium text-gray-900">Approved Submissions</h3>
           <p className="mt-2 text-3xl font-semibold text-green-600">{stats.approvedSubmissions}</p>
         </div>
-      </div>
-
-      <div className="max-w-md">
-        <AdminPromotion />
       </div>
     </div>
   )

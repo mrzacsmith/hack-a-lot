@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { collection, addDoc, getDocs, doc, getDoc } from 'firebase/firestore'
+import { collection, addDoc, getDocs, doc, getDoc, setDoc } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 import { db } from '../../firebase/config'
 import toast from 'react-hot-toast'
@@ -13,10 +13,14 @@ const Submissions = () => {
 
   useEffect(() => {
     const auth = getAuth()
-    if (auth.currentUser) {
-      fetchUserRole(auth.currentUser.uid)
-      fetchSubmissions()
+    if (!auth.currentUser) {
+      setSubmissions([])
+      setUserRole(null)
+      return
     }
+
+    fetchUserRole(auth.currentUser.uid)
+    fetchSubmissions()
   }, [])
 
   const fetchUserRole = async (userId) => {
@@ -24,26 +28,44 @@ const Submissions = () => {
       const userDoc = await getDoc(doc(db, 'users', userId))
       if (userDoc.exists()) {
         setUserRole(userDoc.data().role)
+      } else {
+        // If user document doesn't exist, create it with default role
+        const userData = {
+          email: auth.currentUser.email,
+          role: 'user',
+          createdAt: new Date().toISOString()
+        }
+        await setDoc(doc(db, 'users', userId), userData)
+        setUserRole('user')
       }
     } catch (error) {
       console.error('Error fetching user role:', error)
+      setUserRole('user') // Default to user role on error
     }
   }
 
   const fetchSubmissions = async () => {
     try {
       const auth = getAuth()
+      if (!auth.currentUser) {
+        return
+      }
+
       const userId = auth.currentUser.uid
       const userDoc = await getDoc(doc(db, 'users', userId))
-      const role = userDoc.data()?.role
+      const role = userDoc.exists() ? userDoc.data()?.role : 'user'
 
       const submissionsSnapshot = await getDocs(collection(db, 'submissions'))
       const submissionsList = submissionsSnapshot.docs
-        .map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }))
+        .map(doc => {
+          const data = doc.data()
+          return data ? {
+            id: doc.id,
+            ...data
+          } : null
+        })
         .filter(submission => {
+          if (!submission) return false
           // If admin or reviewer, show all submissions
           if (role === 'admin' || role === 'reviewer') return true
           // Otherwise, only show user's own submissions
@@ -52,6 +74,7 @@ const Submissions = () => {
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
       setSubmissions(submissionsList)
+      setUserRole(role)
     } catch (error) {
       console.error('Error fetching submissions:', error)
       toast.error('Error loading submissions')
@@ -104,7 +127,9 @@ const Submissions = () => {
     <div className="h-full">
       <div className="flex flex-col h-full">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">Submissions</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            {userRole === 'admin' || userRole === 'reviewer' ? 'All Submissions' : 'Your Submissions'}
+          </h1>
         </div>
 
         <div className="bg-white shadow overflow-hidden sm:rounded-md mb-6">
@@ -166,8 +191,13 @@ const Submissions = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-indigo-600 hover:text-indigo-900"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          window.open(submission.url, '_blank', 'noopener,noreferrer')
+                        }}
                       >
-                        {submission.url}
+                        {new URL(submission.url).hostname}
+                        <span className="ml-1 text-gray-500">↗</span>
                       </a>
                       <p className="text-sm text-gray-500">
                         Submitted by {submission.userEmail} on{' '}

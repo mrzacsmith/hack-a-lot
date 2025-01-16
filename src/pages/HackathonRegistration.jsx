@@ -62,17 +62,21 @@ const HackathonRegistration = () => {
         return
       }
 
-      if (hackathon.participants?.includes(auth.currentUser.uid)) {
+      const hackathonRef = doc(db, 'hackathons', hackathonId)
+      const currentHackathon = await getDoc(hackathonRef)
+      const participants = currentHackathon.data()?.participants || []
+
+      if (participants.includes(auth.currentUser.uid)) {
         toast.error('You are already registered for this hackathon')
         return
       }
 
-      if (hackathon.participants?.length >= hackathon.maxParticipants) {
+      if (participants.length >= hackathon.maxParticipants) {
         toast.error('This hackathon has reached maximum capacity')
         return
       }
 
-      await updateDoc(doc(db, 'hackathons', hackathonId), {
+      await updateDoc(hackathonRef, {
         participants: arrayUnion(auth.currentUser.uid)
       })
 

@@ -118,11 +118,70 @@ service cloud.firestore {
 
     // Hackathons collection
     match /hackathons/{hackathon} {
-      // Only admins can create, update, and delete hackathons
-      allow create, update, delete: if request.auth != null && isAdmin();
+      // Only admins can create and delete hackathons
+      allow create, delete: if request.auth != null && isAdmin();
+      
+      // Admins can update all fields, regular users can only update participants
+      allow update: if request.auth != null && (
+        isAdmin() || 
+        // Allow users to update only the participants field
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participants']) &&
+          // Ensure other fields remain unchanged
+          request.resource.data.title == resource.data.title &&
+          request.resource.data.description == resource.data.description &&
+          request.resource.data.startDate == resource.data.startDate &&
+          request.resource.data.endDate == resource.data.endDate &&
+          request.resource.data.registrationDeadline == resource.data.registrationDeadline &&
+          request.resource.data.maxParticipants == resource.data.maxParticipants &&
+          request.resource.data.status == resource.data.status
+        )
+      );
       
       // All authenticated users can read hackathons
       allow read, list: if request.auth != null;
+
+      // Submissions subcollection
+      match /submissions/{submission} {
+        // Allow reading submissions if:
+        // 1. User is admin/reviewer
+        // 2. User is the submission owner
+        // 3. User is registered for this hackathon
+        allow read: if request.auth != null && (
+          isAdmin() ||
+          isReviewer() ||
+          request.auth.uid == resource.data.userId ||
+          resource.data.hackathonId in get(/databases/$(database)/documents/hackathons/$(hackathon)).data.participants
+        );
+
+        // Allow creating submissions if:
+        // 1. User is authenticated
+        // 2. User is registered for this hackathon
+        // 3. Submission data is valid
+        allow create: if request.auth != null &&
+          request.auth.uid in get(/databases/$(database)/documents/hackathons/$(hackathon)).data.participants &&
+          request.resource.data.userId == request.auth.uid &&
+          request.resource.data.hackathonId == hackathon &&
+          request.resource.data.status == 'pending' &&
+          request.resource.data.createdAt is timestamp;
+
+        // Allow updating submissions if:
+        // 1. User is admin/reviewer (can update status)
+        // 2. User is the submission owner (can update URL only)
+        allow update: if request.auth != null && (
+          (isAdmin() || isReviewer()) ||
+          (request.auth.uid == resource.data.userId &&
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['url']))
+        );
+
+        // Allow deleting submissions if:
+        // 1. User is admin
+        // 2. User is the submission owner
+        allow delete: if request.auth != null && (
+          isAdmin() ||
+          request.auth.uid == resource.data.userId
+        );
+      }
     }
   }
 } 

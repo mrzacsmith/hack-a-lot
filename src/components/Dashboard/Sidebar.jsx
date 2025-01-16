@@ -1,8 +1,26 @@
 import { Link, useLocation } from 'react-router-dom'
 import UserProfile from './UserProfile'
+import { useState, useEffect } from 'react'
+import { getAuth } from 'firebase/auth'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '../../firebase/config'
 
 const Sidebar = ({ setIsAuthenticated }) => {
   const location = useLocation()
+  const [userRole, setUserRole] = useState(null)
+  const auth = getAuth()
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (auth.currentUser) {
+        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid))
+        if (userDoc.exists()) {
+          setUserRole(userDoc.data().role)
+        }
+      }
+    }
+    fetchUserRole()
+  }, [auth.currentUser])
 
   const navigation = [
     {
@@ -41,6 +59,16 @@ const Sidebar = ({ setIsAuthenticated }) => {
         </svg>
       ),
     },
+    // Only show Hackathon management for admin users
+    ...(userRole === 'admin' ? [{
+      name: 'Hackathons',
+      href: '/dashboard/hackathons',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+    }] : []),
   ]
 
   return (

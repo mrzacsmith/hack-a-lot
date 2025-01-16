@@ -125,6 +125,10 @@ const Hackathons = () => {
       const registrationDateTime = new Date(newHackathon.registrationDeadline)
       registrationDateTime.setHours(23, 59, 59) // Set registration deadline to end of day
 
+      // Determine initial status based on dates
+      const now = new Date()
+      const status = startDateTime <= now && now <= endDateTime ? 'active' : 'upcoming'
+
       const hackathonData = {
         ...newHackathon,
         startDate: Timestamp.fromDate(startDateTime),
@@ -133,7 +137,8 @@ const Hackathons = () => {
         maxParticipants: parseInt(newHackathon.maxParticipants),
         createdAt: Timestamp.now(),
         participants: [],
-        imageUrl
+        imageUrl,
+        status // Set the computed status
       }
 
       await addDoc(collection(db, 'hackathons'), hackathonData)
@@ -219,13 +224,21 @@ const Hackathons = () => {
       const registrationDateTime = new Date(editingHackathon.registrationDeadline)
       registrationDateTime.setHours(23, 59, 59) // Set registration deadline to end of day
 
+      // Determine status based on dates if not manually set
+      const now = new Date()
+      let status = editingHackathon.status
+      if (status === 'upcoming' || status === 'active') {
+        status = startDateTime <= now && now <= endDateTime ? 'active' : 'upcoming'
+      }
+
       const hackathonData = {
         ...editingHackathon,
         startDate: Timestamp.fromDate(startDateTime),
         endDate: Timestamp.fromDate(endDateTime),
         registrationDeadline: Timestamp.fromDate(registrationDateTime),
         maxParticipants: parseInt(editingHackathon.maxParticipants),
-        imageUrl
+        imageUrl,
+        status // Set the computed status
       }
 
       // Remove only the id field

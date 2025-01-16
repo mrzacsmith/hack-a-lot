@@ -4,7 +4,7 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { Toaster } from 'react-hot-toast'
 import app from './firebase/config'
 import Navbar from './components/Navbar'
-import LandingPage from './components/LandingPage'
+import LandingPage from './pages/LandingPage'
 import Login from './components/Login'
 import Register from './components/Register'
 import PasswordReset from './components/PasswordReset'
@@ -16,6 +16,7 @@ import Users from './components/Dashboard/Users'
 import Hackathons from './components/Dashboard/Hackathons'
 import Settings from './components/Settings'
 import ProtectedRoute from './components/ProtectedRoute'
+import HackathonRegistration from './pages/HackathonRegistration'
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -66,6 +67,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/hackathons/:hackathonId/register" element={<HackathonRegistration />} />
       </Routes>
     </Router>
   )

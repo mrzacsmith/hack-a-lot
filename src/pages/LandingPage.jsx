@@ -1,10 +1,22 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
+import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { db } from '../firebase/config'
 
 const LandingPage = () => {
   const [hackathons, setHackathons] = useState([])
+  const [user, setUser] = useState(null)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const auth = getAuth()
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setUser(user)
+    })
+
+    return () => unsubscribeAuth()
+  }, [])
 
   const formatDate = (date) => {
     return date.toLocaleDateString('en-US', {
@@ -56,6 +68,21 @@ const LandingPage = () => {
     return () => unsubscribe()
   }, [])
 
+  const handleRegisterClick = (hackathonId) => {
+    if (user) {
+      // User is authenticated, go directly to hackathon registration
+      navigate(`/hackathons/${hackathonId}/register`)
+    } else {
+      // User is not authenticated, go to register page with redirect
+      navigate('/register', {
+        state: {
+          redirectTo: `/hackathons/${hackathonId}/register`,
+          message: 'Please create an account to register for the hackathon.'
+        }
+      })
+    }
+  }
+
   return (
     <div className="bg-gray-50">
       {/* Hero Section */}
@@ -65,7 +92,7 @@ const LandingPage = () => {
             <main className="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
               <div className="sm:text-center lg:text-left">
                 <h1 className="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
-                  <span className="block">Streamline Your</span>
+                  <span className="block">Streamline Your!!</span>
                   <span className="block text-indigo-600">Hackathon Reviews</span>
                 </h1>
                 <p className="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
@@ -166,12 +193,12 @@ const LandingPage = () => {
                     </div>
                   </div>
                   <div className="px-6 py-4 bg-gray-50">
-                    <Link
-                      to="/register"
-                      className="block w-full text-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+                    <button
+                      onClick={() => handleRegisterClick(hackathon.id)}
+                      className="block w-full text-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
                       Register Now
-                    </Link>
+                    </button>
                   </div>
                 </div>
               ))

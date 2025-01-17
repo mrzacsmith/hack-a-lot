@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getAuth } from 'firebase/auth'
-import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../firebase/config'
 import toast from 'react-hot-toast'
 
@@ -24,23 +24,43 @@ const Reviews = () => {
 
     const fetchSubmissions = async () => {
       try {
-        const submissionsSnapshot = await getDocs(collection(db, 'submissions'))
-        const submissionsList = await Promise.all(submissionsSnapshot.docs.map(async docSnapshot => {
-          const data = docSnapshot.data()
-          // Fetch the user's email for each submission
-          const userDoc = await getDoc(doc(db, 'users', data.userId))
+        // First get all hackathons
+        const hackathonsSnapshot = await getDocs(collection(db, 'hackathons'))
+        const allSubmissions = []
 
-          // Fetch the hackathon data
-          const hackathonDoc = await getDoc(doc(db, 'hackathons', data.hackathonId))
+        // For each hackathon, get its submissions
+        for (const hackathonDoc of hackathonsSnapshot.docs) {
+          const hackathonData = hackathonDoc.data()
+          const submissionsSnapshot = await getDocs(
+            collection(db, 'hackathons', hackathonDoc.id, 'submissions')
+          )
 
-          return {
-            id: docSnapshot.id,
-            ...data,
-            userEmail: userDoc.exists() ? userDoc.data().email : 'Unknown',
-            hackathonTitle: hackathonDoc.exists() ? hackathonDoc.data().title : 'Unknown Event'
-          }
+          // Process each submission
+          const hackathonSubmissions = await Promise.all(
+            submissionsSnapshot.docs.map(async (submissionDoc) => {
+              const data = submissionDoc.data()
+              // Fetch the user's email
+              const userDoc = await getDoc(doc(db, 'users', data.userId))
+
+              return {
+                id: submissionDoc.id,
+                hackathonId: hackathonDoc.id,
+                ...data,
+                userEmail: userDoc.exists() ? userDoc.data().email : 'Unknown',
+                hackathonTitle: hackathonData.title || 'Unknown Event'
+              }
+            })
+          )
+
+          allSubmissions.push(...hackathonSubmissions)
+        }
+
+        // Sort submissions by creation date
+        setSubmissions(allSubmissions.sort((a, b) => {
+          const dateA = a.createdAt?.toDate?.() || new Date(a.createdAt)
+          const dateB = b.createdAt?.toDate?.() || new Date(b.createdAt)
+          return dateB - dateA
         }))
-        setSubmissions(submissionsList)
       } catch (error) {
         console.error('Error fetching submissions:', error)
         toast.error('Error loading submissions')
@@ -53,17 +73,17 @@ const Reviews = () => {
     fetchSubmissions()
   }, [auth.currentUser])
 
-  const handleStatusChange = async (submissionId, newStatus) => {
+  const handleStatusChange = async (submissionId, hackathonId, newStatus) => {
     if (!currentUserRole || (currentUserRole !== 'admin' && currentUserRole !== 'reviewer')) {
       toast.error('You do not have permission to update submission status')
       return
     }
 
     try {
-      await updateDoc(doc(db, 'submissions', submissionId), {
+      await updateDoc(doc(db, 'hackathons', hackathonId, 'submissions', submissionId), {
         status: newStatus,
         reviewedBy: auth.currentUser.uid,
-        reviewedAt: new Date().toISOString()
+        reviewedAt: serverTimestamp()
       })
 
       // Update local state
@@ -73,7 +93,7 @@ const Reviews = () => {
             ...submission,
             status: newStatus,
             reviewedBy: auth.currentUser.uid,
-            reviewedAt: new Date().toISOString()
+            reviewedAt: new Date()
           }
           : submission
       ))
@@ -85,14 +105,14 @@ const Reviews = () => {
     }
   }
 
-  const handleDeleteSubmission = async (submissionId) => {
+  const handleDeleteSubmission = async (submissionId, hackathonId) => {
     if (!currentUserRole || (currentUserRole !== 'admin' && currentUserRole !== 'reviewer')) {
       toast.error('You do not have permission to delete submissions')
       return
     }
 
     try {
-      await deleteDoc(doc(db, 'submissions', submissionId))
+      await deleteDoc(doc(db, 'hackathons', hackathonId, 'submissions', submissionId))
 
       // Update local state
       setSubmissions(submissions.filter(submission => submission.id !== submissionId))
@@ -105,18 +125,17 @@ const Reviews = () => {
     }
   }
 
-  const handleAddReview = async (submissionId, comment) => {
+  const handleAddReview = async (submissionId, hackathonId, comment) => {
     if (!currentUserRole || (currentUserRole !== 'admin' && currentUserRole !== 'reviewer')) {
       toast.error('You do not have permission to add reviews')
       return
     }
 
     try {
-      await addDoc(collection(db, 'reviews'), {
-        submissionId,
+      await addDoc(collection(db, 'hackathons', hackathonId, 'submissions', submissionId, 'reviews'), {
         reviewerId: auth.currentUser.uid,
         comment,
-        createdAt: new Date().toISOString()
+        createdAt: serverTimestamp()
       })
 
       toast.success('Review added successfully')
@@ -190,7 +209,7 @@ const Reviews = () => {
                         <span className="ml-1 text-gray-500">↗</span>
                       </a>
                       <div className="text-xs text-gray-500">
-                        Submitted on {new Date(submission.createdAt).toLocaleDateString()} at {new Date(submission.createdAt).toLocaleTimeString()}
+                        Submitted on {submission.createdAt?.toDate?.()?.toLocaleDateString() || new Date(submission.createdAt).toLocaleDateString()} at {submission.createdAt?.toDate?.()?.toLocaleTimeString() || new Date(submission.createdAt).toLocaleTimeString()}
                       </div>
                     </div>
                   </td>
@@ -209,7 +228,7 @@ const Reviews = () => {
                     <div className="space-y-2">
                       <select
                         value={submission.status || 'pending'}
-                        onChange={(e) => handleStatusChange(submission.id, e.target.value)}
+                        onChange={(e) => handleStatusChange(submission.id, submission.hackathonId, e.target.value)}
                         className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                       >
                         <option value="pending">Pending</option>
@@ -256,7 +275,7 @@ const Reviews = () => {
                   </h3>
                   <div className="mt-2">
                     <p className="text-sm text-gray-500">
-                      Are you sure you want to delete the submission from {submissionToDelete.userEmail}? This action cannot be undone.
+                      Are you sure you want to delete this submission? This action cannot be undone.
                     </p>
                   </div>
                 </div>
@@ -265,17 +284,14 @@ const Reviews = () => {
                 <button
                   type="button"
                   className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:col-start-2 sm:text-sm"
-                  onClick={() => handleDeleteSubmission(submissionToDelete.id)}
+                  onClick={() => handleDeleteSubmission(submissionToDelete.id, submissionToDelete.hackathonId)}
                 >
                   Delete
                 </button>
                 <button
                   type="button"
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm"
-                  onClick={() => {
-                    setDeleteModalOpen(false)
-                    setSubmissionToDelete(null)
-                  }}
+                  onClick={() => setDeleteModalOpen(false)}
                 >
                   Cancel
                 </button>

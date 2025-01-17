@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { collection, addDoc, getDocs, query, where, doc, getDoc, setDoc } from 'firebase/firestore'
+import { collection, addDoc, getDocs, query, where, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 import { db } from '../../firebase/config'
 import toast from 'react-hot-toast'
@@ -158,12 +158,13 @@ const Submissions = () => {
 
         const user = auth.currentUser
 
+        // Create submission in the hackathon's submissions subcollection
         await addDoc(collection(db, 'hackathons', selectedHackathon, 'submissions'), {
           url,
           hackathonId: selectedHackathon,
           userId: user.uid,
           userEmail: user.email,
-          createdAt: new Date().toISOString(),
+          createdAt: serverTimestamp(),
           status: 'pending'
         })
 

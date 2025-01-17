@@ -4,6 +4,53 @@ import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestor
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { db } from '../firebase/config'
 
+const CountdownTimer = ({ endDate }) => {
+  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft())
+
+  function calculateTimeLeft() {
+    const difference = new Date(endDate) - new Date()
+    if (difference <= 0) {
+      return { days: 0, hours: 0, minutes: 0, seconds: 0 }
+    }
+
+    return {
+      days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+      minutes: Math.floor((difference / 1000 / 60) % 60),
+      seconds: Math.floor((difference / 1000) % 60)
+    }
+  }
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft())
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [endDate])
+
+  return (
+    <div className="flex justify-center space-x-4 text-sm">
+      <div className="text-center">
+        <div className="font-mono bg-gray-100 rounded px-2 py-1">{timeLeft.days}</div>
+        <div className="text-gray-500 text-xs mt-1">Days</div>
+      </div>
+      <div className="text-center">
+        <div className="font-mono bg-gray-100 rounded px-2 py-1">{timeLeft.hours}</div>
+        <div className="text-gray-500 text-xs mt-1">Hours</div>
+      </div>
+      <div className="text-center">
+        <div className="font-mono bg-gray-100 rounded px-2 py-1">{timeLeft.minutes}</div>
+        <div className="text-gray-500 text-xs mt-1">Mins</div>
+      </div>
+      <div className="text-center">
+        <div className="font-mono bg-gray-100 rounded px-2 py-1">{timeLeft.seconds}</div>
+        <div className="text-gray-500 text-xs mt-1">Secs</div>
+      </div>
+    </div>
+  )
+}
+
 const LandingPage = () => {
   const [hackathons, setHackathons] = useState([])
   const [user, setUser] = useState(null)
@@ -21,19 +68,36 @@ const LandingPage = () => {
   }, [])
 
   const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', {
+    return new Intl.DateTimeFormat('en-US', {
       weekday: 'short',
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
-    })
+      day: 'numeric',
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    }).format(date)
   }
 
   const formatTime = (date) => {
-    return date.toLocaleTimeString('en-US', {
+    return new Intl.DateTimeFormat('en-US', {
       hour: '2-digit',
-      minute: '2-digit'
-    })
+      minute: '2-digit',
+      timeZoneName: 'short',
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    }).format(date)
+  }
+
+  const formatDateTime = (date) => {
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    return new Intl.DateTimeFormat('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short',
+      timeZone: timeZone
+    }).format(date)
   }
 
   useEffect(() => {
@@ -219,13 +283,13 @@ const LandingPage = () => {
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
-                          <span>Starts: {formatDate(hackathon.startDate)} at {hackathon.startTime}</span>
+                          <span>Starts: {formatDateTime(hackathon.startDate)}</span>
                         </div>
                         <div className="flex items-center text-sm text-gray-500">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <span>Ends: {formatDate(hackathon.endDate)} at {hackathon.endTime}</span>
+                          <span>Ends: {formatDateTime(hackathon.endDate)}</span>
                         </div>
                         <div className="flex items-center text-sm text-gray-500">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -237,17 +301,31 @@ const LandingPage = () => {
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                           </svg>
-                          <span>Register by: {formatDate(hackathon.registrationDeadline)}</span>
+                          <span>Register by: {formatDateTime(hackathon.registrationDeadline)}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-500">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone}</span>
                         </div>
                       </div>
                     </div>
                     <div className="px-6 py-4 bg-gray-50">
-                      <button
-                        onClick={() => handleRegisterClick(hackathon.id)}
-                        className="block w-full text-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                      >
-                        Register Now
-                      </button>
+                      {hackathon.status === 'active' ? (
+                        <div className="space-y-2">
+                          <div className="text-sm text-gray-500 text-center">Event in progress</div>
+                          <div className="text-xs text-gray-500 text-center">Time remaining:</div>
+                          <CountdownTimer endDate={hackathon.endDate} />
+                        </div>
+                      ) : hackathon.status === 'upcoming' && (
+                        <button
+                          onClick={() => handleRegisterClick(hackathon.id)}
+                          className="block w-full text-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                          Register Now
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))

@@ -29,10 +29,15 @@ const Reviews = () => {
           const data = docSnapshot.data()
           // Fetch the user's email for each submission
           const userDoc = await getDoc(doc(db, 'users', data.userId))
+
+          // Fetch the hackathon data
+          const hackathonDoc = await getDoc(doc(db, 'hackathons', data.hackathonId))
+
           return {
             id: docSnapshot.id,
             ...data,
-            userEmail: userDoc.exists() ? userDoc.data().email : 'Unknown'
+            userEmail: userDoc.exists() ? userDoc.data().email : 'Unknown',
+            hackathonTitle: hackathonDoc.exists() ? hackathonDoc.data().title : 'Unknown Event'
           }
         }))
         setSubmissions(submissionsList)
@@ -170,22 +175,32 @@ const Reviews = () => {
               {submissions.map((submission) => (
                 <tr key={submission.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <a
-                      href={submission.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-indigo-600 hover:text-indigo-900"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        window.open(submission.url, '_blank', 'noopener,noreferrer')
-                      }}
-                    >
-                      {new URL(submission.url).hostname}
-                      <span className="ml-1 text-gray-500">↗</span>
-                    </a>
+                    <div className="space-y-1">
+                      <a
+                        href={submission.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 hover:text-indigo-900"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          window.open(submission.url, '_blank', 'noopener,noreferrer')
+                        }}
+                      >
+                        {new URL(submission.url).hostname}
+                        <span className="ml-1 text-gray-500">↗</span>
+                      </a>
+                      <div className="text-xs text-gray-500">
+                        Submitted on {new Date(submission.createdAt).toLocaleDateString()} at {new Date(submission.createdAt).toLocaleTimeString()}
+                      </div>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {submission.userEmail}
+                    <div className="space-y-1">
+                      <div>{submission.userEmail}</div>
+                      <div className="text-xs text-gray-500">
+                        Event: {submission.hackathonTitle}
+                      </div>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
                     {submission.status || 'Pending'}

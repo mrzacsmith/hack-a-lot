@@ -541,13 +541,36 @@ const Hackathons = () => {
           {hackathons.map((hackathon) => (
             <li
               key={hackathon.id}
-              className={`px-6 py-4 ${hackathon.status === 'upcoming' ? 'bg-yellow-50' :
-                hackathon.status === 'active' ? 'bg-green-50' :
-                  hackathon.status === 'completed' ? 'bg-gray-50' :
-                    hackathon.status === 'cancelled' ? 'bg-red-50' :
-                      'bg-white'
+              className={`px-6 py-4 relative ${hackathon.type === 'lightning'
+                ? 'bg-gradient-to-r from-purple-50 to-indigo-50 border-l-4 border-indigo-500'
+                : hackathon.status === 'upcoming'
+                  ? 'bg-yellow-50'
+                  : hackathon.status === 'active'
+                    ? 'bg-green-50'
+                    : hackathon.status === 'completed'
+                      ? 'bg-gray-50'
+                      : hackathon.status === 'cancelled'
+                        ? 'bg-red-50'
+                        : 'bg-white'
                 } hover:bg-opacity-80 transition-colors duration-200`}
             >
+              {hackathon.type === 'lightning' && (
+                <div className="absolute top-4 right-4 flex items-center space-x-1 px-2 py-1 bg-indigo-100 rounded-full">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="w-4 h-4 text-indigo-600"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M14.615 1.595a.75.75 0 01.359.852L12.982 9.75h7.268a.75.75 0 01.548 1.262l-10.5 11.25a.75.75 0 01-1.272-.71l1.992-7.302H3.75a.75.75 0 01-.548-1.262l10.5-11.25a.75.75 0 01.913-.143z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="text-xs font-semibold text-indigo-700">Lightning Round</span>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0 h-24 w-24">
@@ -576,7 +599,28 @@ const Hackathons = () => {
                     )}
                   </div>
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900">{hackathon.title}</h3>
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-medium text-gray-900">{hackathon.title}</h3>
+                      {hackathon.type === 'lightning' && (
+                        <div className="flex items-center space-x-1 text-indigo-600">
+                          <span className="text-sm font-semibold">
+                            {hackathon.duration} min
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2 mt-1">
+                      <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${hackathon.status === 'upcoming'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : hackathon.status === 'active'
+                          ? 'bg-green-100 text-green-800'
+                          : hackathon.status === 'completed'
+                            ? 'bg-gray-100 text-gray-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                        {hackathon.status.charAt(0).toUpperCase() + hackathon.status.slice(1)}
+                      </span>
+                    </div>
                     <p className="mt-1 text-sm text-gray-500">{hackathon.description}</p>
                     <div className="mt-2 text-sm text-gray-500">
                       <div className="flex items-center space-x-2">

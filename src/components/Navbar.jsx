@@ -56,9 +56,15 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
 
           {/* Desktop menu */}
           <div className="hidden sm:flex sm:items-center sm:space-x-4">
-            <Link to="/" className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">
-              Home
-            </Link>
+            {isAuthenticated ? (
+              <Link to="/dashboard" className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">
+                Dashboard
+              </Link>
+            ) : (
+              <Link to="/" className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">
+                Home
+              </Link>
+            )}
             {!isAuthenticated ? (
               <>
                 <Link
@@ -177,12 +183,21 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
                 </div>
               </div>
             )}
-            <Link
-              to="/"
-              className="block px-3 py-2 text-gray-700 hover:text-indigo-600 hover:bg-gray-100 text-base font-medium"
-            >
-              Home
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                to="/dashboard"
+                className="block px-3 py-2 text-gray-700 hover:text-indigo-600 hover:bg-gray-100 text-base font-medium"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <Link
+                to="/"
+                className="block px-3 py-2 text-gray-700 hover:text-indigo-600 hover:bg-gray-100 text-base font-medium"
+              >
+                Home
+              </Link>
+            )}
             {!isAuthenticated ? (
               <>
                 <Link

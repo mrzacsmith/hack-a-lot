@@ -23,7 +23,9 @@ const Hackathons = () => {
     registrationDeadline: '',
     maxParticipants: '',
     status: 'upcoming',
-    imageUrl: ''
+    imageUrl: '',
+    type: 'regular',
+    duration: 60 // Default duration in minutes
   })
 
   const formatDate = (dateStr) => {
@@ -138,7 +140,9 @@ const Hackathons = () => {
         createdAt: Timestamp.now(),
         participants: [],
         imageUrl,
-        status // Set the computed status
+        status,
+        type: newHackathon.type,
+        duration: newHackathon.type === 'lightning' ? newHackathon.duration : null
       }
 
       await addDoc(collection(db, 'hackathons'), hackathonData)
@@ -153,7 +157,9 @@ const Hackathons = () => {
         endTime: '17:00',
         registrationDeadline: '',
         maxParticipants: '',
-        status: 'upcoming'
+        status: 'upcoming',
+        type: 'regular',
+        duration: 60
       })
       setImageFile(null)
       setImagePreview(null)
@@ -355,6 +361,70 @@ const Hackathons = () => {
               />
             </div>
 
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Hackathon Type</label>
+                <select
+                  required
+                  value={newHackathon.type}
+                  onChange={(e) => {
+                    const newType = e.target.value;
+                    setNewHackathon(prev => {
+                      const updated = { ...prev, type: newType };
+                      if (newType === 'lightning') {
+                        // For Lightning Round, calculate end time based on duration
+                        const startDateTime = new Date(`${updated.startDate}T${updated.startTime}`);
+                        if (startDateTime.toString() !== 'Invalid Date') {
+                          const endDateTime = new Date(startDateTime.getTime() + (updated.duration * 60 * 1000));
+                          updated.endDate = endDateTime.toISOString().split('T')[0];
+                          updated.endTime = endDateTime.toTimeString().slice(0, 5);
+                        }
+                      }
+                      return updated;
+                    });
+                  }}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                >
+                  <option value="regular">Regular</option>
+                  <option value="lightning">Lightning Round</option>
+                </select>
+              </div>
+
+              {newHackathon.type === 'lightning' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Duration (minutes)</label>
+                  <div className="mt-1 flex items-center space-x-2">
+                    <input
+                      type="range"
+                      min="15"
+                      max="360"
+                      step="15"
+                      value={newHackathon.duration}
+                      onChange={(e) => {
+                        const newDuration = parseInt(e.target.value);
+                        setNewHackathon(prev => {
+                          const updated = { ...prev, duration: newDuration };
+                          if (updated.startDate && updated.startTime) {
+                            const startDateTime = new Date(`${updated.startDate}T${updated.startTime}`);
+                            const endDateTime = new Date(startDateTime.getTime() + (newDuration * 60 * 1000));
+                            updated.endDate = endDateTime.toISOString().split('T')[0];
+                            updated.endTime = endDateTime.toTimeString().slice(0, 5);
+                          }
+                          return updated;
+                        });
+                      }}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <span className="text-sm text-gray-600 w-20">{newHackathon.duration} min</span>
+                  </div>
+                  <div className="mt-1 text-xs text-gray-500 flex justify-between">
+                    <span>15 min</span>
+                    <span>6 hours</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Start Date</label>
@@ -362,7 +432,19 @@ const Hackathons = () => {
                   type="date"
                   required
                   value={newHackathon.startDate}
-                  onChange={(e) => setNewHackathon({ ...newHackathon, startDate: e.target.value })}
+                  onChange={(e) => {
+                    const newStartDate = e.target.value;
+                    setNewHackathon(prev => {
+                      const updated = { ...prev, startDate: newStartDate };
+                      if (updated.type === 'lightning' && newStartDate && updated.startTime) {
+                        const startDateTime = new Date(`${newStartDate}T${updated.startTime}`);
+                        const endDateTime = new Date(startDateTime.getTime() + (updated.duration * 60 * 1000));
+                        updated.endDate = endDateTime.toISOString().split('T')[0];
+                        updated.endTime = endDateTime.toTimeString().slice(0, 5);
+                      }
+                      return updated;
+                    });
+                  }}
                   className="mt-1 block w-full"
                 />
               </div>
@@ -372,7 +454,19 @@ const Hackathons = () => {
                   type="time"
                   required
                   value={newHackathon.startTime}
-                  onChange={(e) => setNewHackathon({ ...newHackathon, startTime: e.target.value })}
+                  onChange={(e) => {
+                    const newStartTime = e.target.value;
+                    setNewHackathon(prev => {
+                      const updated = { ...prev, startTime: newStartTime };
+                      if (updated.type === 'lightning' && updated.startDate) {
+                        const startDateTime = new Date(`${updated.startDate}T${newStartTime}`);
+                        const endDateTime = new Date(startDateTime.getTime() + (updated.duration * 60 * 1000));
+                        updated.endDate = endDateTime.toISOString().split('T')[0];
+                        updated.endTime = endDateTime.toTimeString().slice(0, 5);
+                      }
+                      return updated;
+                    });
+                  }}
                   className="mt-1 block w-full"
                 />
               </div>
@@ -384,6 +478,7 @@ const Hackathons = () => {
                   value={newHackathon.endDate}
                   onChange={(e) => setNewHackathon({ ...newHackathon, endDate: e.target.value })}
                   className="mt-1 block w-full"
+                  disabled={newHackathon.type === 'lightning'}
                 />
               </div>
               <div>
@@ -394,6 +489,7 @@ const Hackathons = () => {
                   value={newHackathon.endTime}
                   onChange={(e) => setNewHackathon({ ...newHackathon, endTime: e.target.value })}
                   className="mt-1 block w-full"
+                  disabled={newHackathon.type === 'lightning'}
                 />
               </div>
             </div>

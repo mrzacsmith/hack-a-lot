@@ -7,6 +7,8 @@ import { db } from '../firebase/config'
 const LandingPage = () => {
   const [hackathons, setHackathons] = useState([])
   const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -35,6 +37,9 @@ const LandingPage = () => {
   }
 
   useEffect(() => {
+    setLoading(true)
+    setError(null)
+
     const q = query(
       collection(db, 'hackathons'),
       where('status', 'in', ['upcoming', 'active']),
@@ -42,7 +47,6 @@ const LandingPage = () => {
     )
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log('Raw hackathons:', snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))
       const hackathonsList = snapshot.docs.map(doc => {
         const data = doc.data()
         const startDateTime = data.startDate?.toDate()
@@ -59,10 +63,12 @@ const LandingPage = () => {
           endTime: endDateTime ? formatTime(endDateTime) : ''
         }
       })
-      console.log('Processed hackathons:', hackathonsList)
       setHackathons(hackathonsList)
+      setLoading(false)
     }, (error) => {
       console.error('Error listening to hackathons:', error)
+      setError('Failed to load hackathons. Please try again later.')
+      setLoading(false)
     })
 
     return () => unsubscribe()
@@ -133,115 +139,125 @@ const LandingPage = () => {
             <p className="mt-4 text-xl text-gray-500">Join our upcoming events and showcase your skills</p>
           </div>
 
-          <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {hackathons.length > 0 ? (
-              hackathons.map((hackathon) => (
-                <div
-                  key={hackathon.id}
-                  className={`flex flex-col rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 relative ${hackathon.type === 'lightning'
-                    ? 'bg-gradient-to-r from-purple-50 to-indigo-50 border-l-4 border-indigo-500'
-                    : 'bg-white'
-                    } ${hackathon.status === 'active' ? 'ring-2 ring-green-500' : ''}`}
-                >
-                  {hackathon.type === 'lightning' && (
-                    <div className="absolute top-4 right-4 flex items-center space-x-1 px-2 py-1 bg-indigo-100 rounded-full z-10">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        className="w-4 h-4 text-indigo-600"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M14.615 1.595a.75.75 0 01.359.852L12.982 9.75h7.268a.75.75 0 01.548 1.262l-10.5 11.25a.75.75 0 01-1.272-.71l1.992-7.302H3.75a.75.75 0 01-.548-1.262l10.5-11.25a.75.75 0 01.913-.143z"
-                          clipRule="evenodd"
+          {loading ? (
+            <div className="mt-12 flex justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            </div>
+          ) : error ? (
+            <div className="mt-12 text-center text-red-600">
+              {error}
+            </div>
+          ) : (
+            <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              {hackathons.length > 0 ? (
+                hackathons.map((hackathon) => (
+                  <div
+                    key={hackathon.id}
+                    className={`flex flex-col rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 relative ${hackathon.type === 'lightning'
+                      ? 'bg-gradient-to-r from-purple-50 to-indigo-50 border-l-4 border-indigo-500'
+                      : 'bg-white'
+                      } ${hackathon.status === 'active' ? 'ring-2 ring-green-500' : ''}`}
+                  >
+                    {hackathon.type === 'lightning' && (
+                      <div className="absolute top-4 right-4 flex items-center space-x-1 px-2 py-1 bg-indigo-100 rounded-full z-10">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="w-4 h-4 text-indigo-600"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M14.615 1.595a.75.75 0 01.359.852L12.982 9.75h7.268a.75.75 0 01.548 1.262l-10.5 11.25a.75.75 0 01-1.272-.71l1.992-7.302H3.75a.75.75 0 01-.548-1.262l10.5-11.25a.75.75 0 01.913-.143z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        <span className="text-xs font-semibold text-indigo-700">Lightning Round</span>
+                      </div>
+                    )}
+                    {hackathon.imageUrl ? (
+                      <div className="h-48 w-full overflow-hidden">
+                        <img
+                          src={hackathon.imageUrl}
+                          alt={hackathon.title}
+                          className="w-full h-full object-cover"
                         />
-                      </svg>
-                      <span className="text-xs font-semibold text-indigo-700">Lightning Round</span>
-                    </div>
-                  )}
-                  {hackathon.imageUrl ? (
-                    <div className="h-48 w-full overflow-hidden">
-                      <img
-                        src={hackathon.imageUrl}
-                        alt={hackathon.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="h-48 w-full bg-gray-200 flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  )}
-                  <div className="flex-1 p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <h3 className="text-xl font-semibold text-gray-900">{hackathon.title}</h3>
-                          {hackathon.type === 'lightning' && (
-                            <div className="flex items-center space-x-1 text-indigo-600">
-                              <span className="text-sm font-semibold">
-                                {hackathon.duration} min
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${hackathon.status === 'active'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                            {hackathon.status.charAt(0).toUpperCase() + hackathon.status.slice(1)}
-                          </span>
+                      </div>
+                    ) : (
+                      <div className="h-48 w-full bg-gray-200 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    )}
+                    <div className="flex-1 p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <h3 className="text-xl font-semibold text-gray-900">{hackathon.title}</h3>
+                            {hackathon.type === 'lightning' && (
+                              <div className="flex items-center space-x-1 text-indigo-600">
+                                <span className="text-sm font-semibold">
+                                  {hackathon.duration} min
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${hackathon.status === 'active'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                              {hackathon.status.charAt(0).toUpperCase() + hackathon.status.slice(1)}
+                            </span>
+                          </div>
                         </div>
                       </div>
+                      <p className="mt-3 text-gray-500 text-sm line-clamp-2">{hackathon.description}</p>
+                      <div className="mt-4 space-y-2">
+                        <div className="flex items-center text-sm text-gray-500">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span>Starts: {formatDate(hackathon.startDate)} at {hackathon.startTime}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-500">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>Ends: {formatDate(hackathon.endDate)} at {hackathon.endTime}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-500">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                          </svg>
+                          <span>Max Participants: {hackathon.maxParticipants}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-gray-500">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                          </svg>
+                          <span>Register by: {formatDate(hackathon.registrationDeadline)}</span>
+                        </div>
+                      </div>
                     </div>
-                    <p className="mt-3 text-gray-500 text-sm line-clamp-2">{hackathon.description}</p>
-                    <div className="mt-4 space-y-2">
-                      <div className="flex items-center text-sm text-gray-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <span>Starts: {formatDate(hackathon.startDate)} at {hackathon.startTime}</span>
-                      </div>
-                      <div className="flex items-center text-sm text-gray-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span>Ends: {formatDate(hackathon.endDate)} at {hackathon.endTime}</span>
-                      </div>
-                      <div className="flex items-center text-sm text-gray-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                        <span>Max Participants: {hackathon.maxParticipants}</span>
-                      </div>
-                      <div className="flex items-center text-sm text-gray-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                        <span>Register by: {formatDate(hackathon.registrationDeadline)}</span>
-                      </div>
+                    <div className="px-6 py-4 bg-gray-50">
+                      <button
+                        onClick={() => handleRegisterClick(hackathon.id)}
+                        className="block w-full text-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      >
+                        Register Now
+                      </button>
                     </div>
                   </div>
-                  <div className="px-6 py-4 bg-gray-50">
-                    <button
-                      onClick={() => handleRegisterClick(hackathon.id)}
-                      className="block w-full text-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >
-                      Register Now
-                    </button>
-                  </div>
+                ))
+              ) : (
+                <div className="col-span-full text-center text-gray-500">
+                  No upcoming or active hackathons at the moment.
                 </div>
-              ))
-            ) : (
-              <div className="col-span-full text-center text-gray-500">
-                No upcoming or active hackathons at the moment.
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

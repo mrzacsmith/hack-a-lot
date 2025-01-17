@@ -138,8 +138,12 @@ service cloud.firestore {
         )
       );
       
-      // All authenticated users can read hackathons
-      allow read, list: if request.auth != null;
+      // Allow public reading of active and upcoming hackathons
+      allow read, list: if 
+        // Allow authenticated users to read all hackathons
+        request.auth != null || 
+        // Allow public reading of active and upcoming hackathons
+        (resource.data.status in ['active', 'upcoming']);
 
       // Submissions subcollection
       match /submissions/{submission} {

@@ -1,11 +1,10 @@
 import { Link, useLocation } from 'react-router-dom'
-import UserProfile from './UserProfile'
 import { useState, useEffect } from 'react'
 import { getAuth } from 'firebase/auth'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../../firebase/config'
 
-const Sidebar = ({ setIsAuthenticated }) => {
+const Sidebar = () => {
   const location = useLocation()
   const [userRole, setUserRole] = useState(null)
   const auth = getAuth()
@@ -100,10 +99,6 @@ const Sidebar = ({ setIsAuthenticated }) => {
           )
         })}
       </nav>
-
-      <div className="flex-shrink-0 mt-auto">
-        <UserProfile setIsAuthenticated={setIsAuthenticated} />
-      </div>
     </div>
   )
 }

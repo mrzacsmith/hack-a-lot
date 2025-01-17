@@ -86,23 +86,23 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
                 <div className="relative">
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
-                    className="flex items-center space-x-2 text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
+                    className="flex items-center space-x-2 text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 px-3 py-2 rounded-md text-sm font-medium"
                   >
                     {user?.photoURL ? (
                       <img
                         src={user.photoURL}
                         alt="Profile"
-                        className="h-8 w-8 rounded-full object-cover"
+                        className="h-8 w-8 rounded-full object-cover ring-2 ring-gray-200"
                       />
                     ) : (
-                      <div className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium">
+                      <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium ring-2 ring-gray-200">
                         {user?.email?.[0].toUpperCase() || 'U'}
                       </div>
                     )}
-                    <span>{getDisplayName()}</span>
+                    <span className="text-gray-700">{getDisplayName()}</span>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className={`h-5 w-5 transform transition-transform ${isProfileOpen ? 'rotate-180' : ''}`}
+                      className={`h-5 w-5 text-gray-400 transform transition-transform ${isProfileOpen ? 'rotate-180' : ''}`}
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -116,7 +116,7 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
                       <Link
                         to="/settings"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50"
                         onClick={() => setIsProfileOpen(false)}
                       >
                         Settings
@@ -126,7 +126,7 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
                           handleLogout()
                           setIsProfileOpen(false)
                         }}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50"
                       >
                         Logout
                       </button>

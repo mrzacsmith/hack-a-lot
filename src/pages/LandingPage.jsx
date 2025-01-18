@@ -163,12 +163,11 @@ const LandingPage = () => {
               <main className="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
                 <div className="sm:text-center lg:text-left">
                   <h1 className="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
-                    <span className="block">Streamline Your</span>
-                    <span className="block text-indigo-600">Hackathon Reviews</span>
+                    <span className="block">Discover & Join</span>
+                    <span className="block text-indigo-600">Amazing Hackathons</span>
                   </h1>
                   <p className="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                    A powerful platform for managing hackathon submissions, reviews, and feedback. Perfect for organizers,
-                    participants, and reviewers.
+                    Your one-stop platform for discovering exciting hackathons, joining events, and showcasing your projects. Whether you're a participant or an organizer, we've got you covered.
                   </p>
                   <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                     <div className="rounded-md shadow">
@@ -200,7 +199,7 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h2 className="text-3xl font-extrabold text-gray-900">Upcoming & Active Hackathons</h2>
-            <p className="mt-4 text-xl text-gray-500">Join our upcoming events and showcase your skills</p>
+            <p className="mt-4 text-xl text-gray-500">Join exciting events and showcase your innovation</p>
           </div>
 
           {loading ? (
@@ -343,14 +342,94 @@ const LandingPage = () => {
       <div className="py-12 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="lg:text-center">
-            <h2 className="text-base text-indigo-600 font-semibold tracking-wide uppercase">Features</h2>
+            <h2 className="text-base text-indigo-600 font-semibold tracking-wide uppercase">Platform Features</h2>
             <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-              Everything you need to manage hackathons
+              Your Complete Hackathon Platform
+            </p>
+            <p className="mt-4 max-w-2xl text-xl text-gray-500 lg:mx-auto">
+              Everything you need to participate in or organize successful hackathons - from registration to project submission.
             </p>
           </div>
-          {/* ... rest of the features section ... */}
+
+          <div className="mt-10">
+            <div className="space-y-10 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-10">
+              <div className="relative">
+                <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                  </svg>
+                </div>
+                <div className="ml-16">
+                  <h3 className="text-lg font-medium text-gray-900">Discover Events</h3>
+                  <p className="mt-2 text-base text-gray-500">
+                    Browse and join upcoming hackathons from various organizations and communities.
+                  </p>
+                </div>
+              </div>
+
+              <div className="relative">
+                <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="ml-16">
+                  <h3 className="text-lg font-medium text-gray-900">Real-time Updates</h3>
+                  <p className="mt-2 text-base text-gray-500">
+                    Stay informed with live countdowns, event updates, and important announcements.
+                  </p>
+                </div>
+              </div>
+
+              <div className="relative">
+                <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </div>
+                <div className="ml-16">
+                  <h3 className="text-lg font-medium text-gray-900">Easy Submissions</h3>
+                  <p className="mt-2 text-base text-gray-500">
+                    Submit your projects with ease and get feedback from organizers and reviewers.
+                  </p>
+                </div>
+              </div>
+
+              <div className="relative">
+                <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </div>
+                <div className="ml-16">
+                  <h3 className="text-lg font-medium text-gray-900">Host Events</h3>
+                  <p className="mt-2 text-base text-gray-500">
+                    Create and manage your own hackathons with powerful organization tools.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Footer Section */}
+      <footer className="bg-white border-t border-gray-200">
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-center items-center space-x-2 text-gray-500 text-sm">
+            <span>© {new Date().getFullYear()}</span>
+            <a
+              href="https://codeshock.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-indigo-600 hover:text-indigo-500"
+            >
+              Code Shock
+            </a>
+            <span>• All rights reserved</span>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

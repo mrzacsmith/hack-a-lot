@@ -20,7 +20,7 @@ service cloud.firestore {
     }
 
     function isValidStatus(status) {
-      return status in ['pending', 'approved', 'rejected', 'needs_revision'];
+      return status in ['Submitted', 'In Review', 'Commented'];
     }
 
     function isSuperAdmin() {
@@ -158,20 +158,23 @@ service cloud.firestore {
           request.auth.uid in get(/databases/$(database)/documents/hackathons/$(hackathon)).data.participants &&
           request.resource.data.userId == request.auth.uid &&
           request.resource.data.hackathonId == hackathon &&
-          request.resource.data.status == 'pending' &&
+          request.resource.data.status == 'Submitted' &&
           request.resource.data.createdAt is timestamp;
 
         // Reviews subcollection
         match /reviews/{review} {
-          allow read, write: if request.auth != null && 
+          allow read: if request.auth != null;
+          allow write: if request.auth != null && 
             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' || 
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'reviewer');
         }
 
-        // Keep all other rules the same
+        // Allow updating submissions
         allow update: if request.auth != null && (
-          (isAdmin() || isReviewer()) ||
+          // Admins and reviewers can update status
+          ((isAdmin() || isReviewer()) && isValidStatus(request.resource.data.status)) ||
+          // Users can update their own submission URL but not status
           (request.auth.uid == resource.data.userId &&
            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['url']))
         );

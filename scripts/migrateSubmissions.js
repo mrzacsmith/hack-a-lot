@@ -1,81 +1,62 @@
-import { initializeApp } from 'firebase/app'
-import {
-  getFirestore,
-  collection,
-  getDocs,
-  doc,
-  setDoc,
-  deleteField,
-  updateDoc,
-} from 'firebase/firestore'
-import 'dotenv/config'
+import { initializeApp, cert } from 'firebase-admin/app'
+import { getFirestore } from 'firebase-admin/firestore'
+import serviceAccount from '../service-account.json' assert { type: 'json' }
 
-const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY,
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.FIREBASE_APP_ID,
-}
+// Initialize Firebase Admin
+initializeApp({
+  credential: cert(serviceAccount),
+})
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig)
-const db = getFirestore(app)
+const db = getFirestore()
 
-async function migrateSubmissions() {
+async function migrateSubmissionStatuses() {
   try {
+    console.log('Starting submission status migration...')
+
     // Get all hackathons
-    const hackathonsSnapshot = await getDocs(collection(db, 'hackathons'))
+    const hackathonsSnapshot = await db.collection('hackathons').get()
+    let totalUpdated = 0
 
     for (const hackathonDoc of hackathonsSnapshot.docs) {
-      const hackathonData = hackathonDoc.data()
-      const submissionsToDelete = []
+      console.log(`Processing hackathon: ${hackathonDoc.id}`)
 
-      // Find all fields that are submissions (they should have userId and url)
-      for (const [fieldName, fieldValue] of Object.entries(hackathonData)) {
-        if (
-          fieldValue &&
-          typeof fieldValue === 'object' &&
-          'userId' in fieldValue &&
-          'url' in fieldValue
-        ) {
-          // This is a submission field
-          console.log(`Found submission in hackathon ${hackathonDoc.id}: ${fieldName}`)
+      // Get all submissions for this hackathon
+      const submissionsSnapshot = await hackathonDoc.ref
+        .collection('submissions')
+        .where('status', '==', 'pending')
+        .get()
 
-          // Create new submission document in subcollection
-          const submissionRef = doc(collection(db, 'hackathons', hackathonDoc.id, 'submissions'))
-          await setDoc(submissionRef, {
-            ...fieldValue,
-            hackathonId: hackathonDoc.id,
-            status: fieldValue.status || 'pending',
-            createdAt: fieldValue.createdAt || new Date(),
-          })
+      console.log(`Found ${submissionsSnapshot.size} submissions with 'pending' status`)
 
-          // Mark this field for deletion
-          submissionsToDelete.push(fieldName)
+      // Update each submission
+      const batch = db.batch()
+      let batchCount = 0
+
+      for (const submissionDoc of submissionsSnapshot.docs) {
+        batch.update(submissionDoc.ref, { status: 'Submitted' })
+        batchCount++
+        totalUpdated++
+
+        // Firestore batches are limited to 500 operations
+        if (batchCount === 500) {
+          await batch.commit()
+          console.log('Committed batch of 500 updates')
+          batchCount = 0
         }
       }
 
-      // Remove old submission fields
-      if (submissionsToDelete.length > 0) {
-        const updateData = {}
-        submissionsToDelete.forEach((field) => {
-          updateData[field] = deleteField()
-        })
-
-        await updateDoc(doc(db, 'hackathons', hackathonDoc.id), updateData)
-        console.log(
-          `Migrated ${submissionsToDelete.length} submissions for hackathon ${hackathonDoc.id}`
-        )
+      // Commit any remaining updates
+      if (batchCount > 0) {
+        await batch.commit()
+        console.log(`Committed final batch of ${batchCount} updates`)
       }
     }
 
-    console.log('Migration completed successfully!')
+    console.log(`Migration complete! Updated ${totalUpdated} submissions`)
   } catch (error) {
     console.error('Error during migration:', error)
   }
 }
 
 // Run the migration
-migrateSubmissions()
+migrateSubmissionStatuses()

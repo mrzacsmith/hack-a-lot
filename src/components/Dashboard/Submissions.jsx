@@ -12,6 +12,8 @@ const Submissions = () => {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [userRole, setUserRole] = useState(null)
+  const [reviewModalOpen, setReviewModalOpen] = useState(false)
+  const [selectedSubmission, setSelectedSubmission] = useState(null)
   const auth = getAuth()
 
   useEffect(() => {
@@ -76,7 +78,6 @@ const Submissions = () => {
       const userDoc = await getDoc(doc(db, 'users', userId))
       const role = userDoc.exists() ? userDoc.data()?.role : 'user'
 
-      // First get all hackathons the user is registered for
       const hackathonsQuery = query(
         collection(db, 'hackathons'),
         where('participants', 'array-contains', userId)
@@ -85,22 +86,30 @@ const Submissions = () => {
 
       const submissionsList = []
 
-      // For each hackathon, get its submissions
       for (const hackathonDoc of hackathonsSnapshot.docs) {
         const hackathonData = hackathonDoc.data()
         const submissionsRef = collection(db, 'hackathons', hackathonDoc.id, 'submissions')
 
-        // Only get submissions for the current user
         const submissionsQuery = query(submissionsRef, where('userId', '==', userId))
         const submissionsSnapshot = await getDocs(submissionsQuery)
 
-        // Add each submission with its hackathon data
-        submissionsSnapshot.docs.forEach(doc => {
+        // Add each submission with its reviews
+        for (const doc of submissionsSnapshot.docs) {
           const data = doc.data()
           if (data) {
+            // Fetch reviews for this submission
+            const reviewsRef = collection(db, 'hackathons', hackathonDoc.id, 'submissions', doc.id, 'reviews')
+            const reviewsSnapshot = await getDocs(reviewsRef)
+            const reviews = reviewsSnapshot.docs.map(reviewDoc => ({
+              id: reviewDoc.id,
+              ...reviewDoc.data(),
+              createdAt: reviewDoc.data().createdAt?.toDate() || new Date()
+            }))
+
             submissionsList.push({
               id: doc.id,
               ...data,
+              reviews,
               hackathon: {
                 id: hackathonDoc.id,
                 title: hackathonData.title,
@@ -108,10 +117,9 @@ const Submissions = () => {
               }
             })
           }
-        })
+        }
       }
 
-      // Sort submissions by date
       setSubmissions(submissionsList.sort((a, b) =>
         new Date(b.createdAt) - new Date(a.createdAt)
       ))
@@ -119,6 +127,19 @@ const Submissions = () => {
     } catch (error) {
       console.error('Error fetching submissions:', error)
       toast.error('Error loading submissions')
+    }
+  }
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Submitted':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'In Review':
+        return 'bg-blue-100 text-blue-800'
+      case 'Commented':
+        return 'bg-green-100 text-green-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
     }
   }
 
@@ -155,14 +176,23 @@ const Submissions = () => {
 
         const user = auth.currentUser
 
-        // Create submission in the hackathon's submissions subcollection
+        // Check if user already has a submission for this hackathon
+        const submissionsRef = collection(db, 'hackathons', selectedHackathon, 'submissions')
+        const existingSubmissionQuery = query(submissionsRef, where('userId', '==', user.uid))
+        const existingSubmissionSnapshot = await getDocs(existingSubmissionQuery)
+
+        if (!existingSubmissionSnapshot.empty) {
+          throw new Error('You already have a submission for this hackathon')
+        }
+
+        // Create submission with initial status
         await addDoc(collection(db, 'hackathons', selectedHackathon, 'submissions'), {
           url,
           hackathonId: selectedHackathon,
           userId: user.uid,
           userEmail: user.email,
           createdAt: serverTimestamp(),
-          status: 'pending'
+          status: 'Submitted'
         })
 
         setUrl('')
@@ -184,11 +214,19 @@ const Submissions = () => {
     })
   }
 
-  const formatDateTime = (date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short'
-    }).format(date)
+  const formatDateTime = (timestamp) => {
+    try {
+      // Handle Firestore Timestamp
+      const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp)
+
+      return new Intl.DateTimeFormat('en-US', {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      }).format(date)
+    } catch (error) {
+      console.error('Error formatting date:', error)
+      return 'Date unavailable'
+    }
   }
 
   return (
@@ -304,54 +342,128 @@ const Submissions = () => {
         </div>
 
         {/* Submissions List */}
-        <div className="flex-1 bg-white shadow overflow-hidden sm:rounded-md">
+        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
           <ul className="divide-y divide-gray-200">
-            {submissions.length === 0 ? (
-              <li className="px-6 py-4">
-                <p className="text-gray-500">No submissions yet</p>
-              </li>
-            ) : (
-              submissions.map((submission) => (
-                <li key={submission.id} className="px-6 py-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <a
-                          href={submission.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-indigo-600 hover:text-indigo-900"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            window.open(submission.url, '_blank', 'noopener,noreferrer')
-                          }}
-                        >
-                          {new URL(submission.url).hostname}
-                          <span className="ml-1 text-gray-500">↗</span>
-                        </a>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${submission.status === 'pending'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-green-100 text-green-800'
-                          }`}>
-                          {submission.status}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-500">
-                        Submitted by {submission.userEmail} on{' '}
-                        {new Date(submission.createdAt).toLocaleDateString()}
+            {submissions.map((submission) => (
+              <li key={submission.id} className="px-4 py-4 sm:px-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3">
+                      <p className="text-sm font-medium text-indigo-600 truncate">
+                        {submission.url}
                       </p>
-                      {submission.hackathon && (
-                        <p className="text-sm text-gray-500 mt-1">
-                          Hackathon: {submission.hackathon.title}
-                        </p>
-                      )}
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(submission.status)}`}>
+                        {submission.status}
+                      </span>
                     </div>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Submitted for: {submission.hackathon.title}
+                    </p>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Submitted on: {submission.createdAt ? formatDateTime(submission.createdAt) : 'Date unavailable'}
+                    </p>
                   </div>
-                </li>
-              ))
-            )}
+                  <div className="ml-4 flex items-center space-x-4">
+                    <button
+                      onClick={() => {
+                        setSelectedSubmission(submission)
+                        setReviewModalOpen(true)
+                      }}
+                      className="text-gray-400 hover:text-gray-500"
+                      title="View Reviews"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="ml-1 text-sm">
+                        {submission.reviews?.length || 0}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </li>
+            ))}
           </ul>
         </div>
+
+        {/* Reviews Modal */}
+        {reviewModalOpen && selectedSubmission && (
+          <div className="fixed inset-0 z-10 overflow-y-auto">
+            <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+                <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+              </div>
+
+              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg leading-6 font-medium text-gray-900">
+                          Reviews for Submission
+                        </h3>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedSubmission.status)}`}>
+                          {selectedSubmission.status}
+                        </span>
+                      </div>
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-500 mb-4">
+                          Submission URL: {selectedSubmission.url}
+                        </p>
+                        {selectedSubmission.reviews?.length > 0 ? (
+                          <div className="space-y-4">
+                            {selectedSubmission.reviews.map((review) => (
+                              <div key={review.id} className="border-b pb-4">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <p className="text-sm font-medium">
+                                      Score: {review.score}/100
+                                    </p>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                      {review.comment}
+                                    </p>
+                                  </div>
+                                  <p className="text-xs text-gray-400">
+                                    {review.createdAt ? formatDateTime(review.createdAt) : 'Date unavailable'}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">
+                            No reviews yet for this submission.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <button
+                    type="button"
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                    onClick={() => {
+                      setReviewModalOpen(false)
+                      setSelectedSubmission(null)
+                    }}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

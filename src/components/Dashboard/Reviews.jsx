@@ -95,16 +95,33 @@ const Reviews = () => {
 
       setIsLoading(true)
       try {
-        // Get all submissions for the selected hackathon using the correct path
+        // Debug logs
+        console.log('Debug info:')
+        console.log('Auth user:', auth.currentUser?.uid)
+        console.log('Current user role:', currentUserRole)
+        console.log('Selected hackathon:', selectedHackathon)
+
+        // Get user document to verify role
+        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid))
+        console.log('User doc data:', userDoc.data())
+
+        // Get hackathon document to verify it exists
+        const hackathonDoc = await getDoc(doc(db, 'hackathons', selectedHackathon))
+        console.log('Hackathon exists:', hackathonDoc.exists())
+
+        // Get all submissions for the selected hackathon
         const submissionsRef = collection(db, 'hackathons', selectedHackathon, 'submissions')
+        console.log('Attempting to fetch submissions from path:', submissionsRef.path)
         const submissionsSnapshot = await getDocs(submissionsRef)
+        console.log('Submissions fetched:', submissionsSnapshot.docs.length)
 
         const submissionsWithDetails = await Promise.all(
           submissionsSnapshot.docs.map(async (submissionDoc) => {
             const data = submissionDoc.data()
+            console.log('Submission data:', data)
             const userDoc = await getDoc(doc(db, 'users', data.userId))
 
-            // Get all reviews for this submission using the correct path
+            // Get all reviews for this submission
             const reviewsRef = collection(db, 'hackathons', selectedHackathon, 'submissions', submissionDoc.id, 'reviews')
             const reviewsSnapshot = await getDocs(reviewsRef)
 
@@ -125,7 +142,8 @@ const Reviews = () => {
 
         setSubmissions(submissionsWithDetails)
       } catch (error) {
-        console.error('Error fetching submissions:', error)
+        console.error('Detailed error:', error)
+        console.error('Error stack:', error.stack)
         toast.error('Error loading submissions')
       } finally {
         setIsLoading(false)
@@ -135,7 +153,7 @@ const Reviews = () => {
     if (selectedHackathon) {
       fetchSubmissions()
     }
-  }, [selectedHackathon])
+  }, [selectedHackathon, currentUserRole, auth.currentUser])
 
   const handleAddReview = async () => {
     if (!selectedSubmission || !reviewComment.trim() || score < 0 || score > 100) {

@@ -4,13 +4,11 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Helper functions
     function isAdmin() {
-      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
-      return userDoc != null && userDoc.data != null && userDoc.data.role == 'admin';
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
     function isReviewer() {
-      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
-      return userDoc != null && userDoc.data != null && userDoc.data.role == 'reviewer';
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'reviewer';
     }
     
     function isOwner(submissionData) {
@@ -69,7 +67,7 @@ service cloud.firestore {
       );
     }
 
-    // Submissions collection
+    // Submissions collection (for Submissions component)
     match /submissions/{submission} {
       allow list: if request.auth != null;  // Allow listing for all authenticated users
       
@@ -79,7 +77,8 @@ service cloud.firestore {
                    && request.resource.data.createdAt is timestamp
                    && (!('status' in request.resource.data) || request.resource.data.status == 'pending');
       
-      allow get: if request.auth != null && hasAccess(resource.data);
+      // Users can only see their own submissions
+      allow get: if request.auth != null && request.auth.uid == resource.data.userId;
       
       allow update: if request.auth != null 
                    && hasAccess(resource.data)
@@ -141,17 +140,14 @@ service cloud.firestore {
         // Allow public reading of active and upcoming hackathons
         (resource.data.status in ['active', 'upcoming']);
 
-      // Submissions subcollection
+      // Submissions subcollection (for Reviews component)
       match /submissions/{submission} {
         // Allow reading submissions if:
         // 1. User is admin/reviewer
         // 2. User is the submission owner
-        // 3. User is registered for this hackathon
         allow read: if request.auth != null && (
-          isAdmin() ||
-          isReviewer() ||
-          request.auth.uid == resource.data.userId ||
-          resource.data.hackathonId in get(/databases/$(database)/documents/hackathons/$(hackathon)).data.participants
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'reviewer'] ||
+          request.auth.uid == resource.data.userId
         );
 
         // Allow creating submissions if:
@@ -165,9 +161,15 @@ service cloud.firestore {
           request.resource.data.status == 'pending' &&
           request.resource.data.createdAt is timestamp;
 
-        // Allow updating submissions if:
-        // 1. User is admin/reviewer (can update status)
-        // 2. User is the submission owner (can update URL only)
+        // Reviews subcollection
+        match /reviews/{review} {
+          allow read, write: if request.auth != null && 
+            exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+            (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' || 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'reviewer');
+        }
+
+        // Keep all other rules the same
         allow update: if request.auth != null && (
           (isAdmin() || isReviewer()) ||
           (request.auth.uid == resource.data.userId &&

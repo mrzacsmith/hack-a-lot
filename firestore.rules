@@ -21,10 +21,6 @@ service cloud.firestore {
       return isAdmin() || isReviewer() || isOwner(submissionData);
     }
 
-    function isValidRole(role) {
-      return role in ['user', 'reviewer', 'admin'];
-    }
-
     function isValidStatus(status) {
       return status in ['pending', 'approved', 'rejected', 'needs_revision'];
     }
@@ -57,18 +53,18 @@ service cloud.firestore {
           request.resource.data.email == resource.data.email
         )) ||
         // Super admin can update any role
-        (request.auth.token.email == 'zac@codeshock.dev') ||
+        isSuperAdmin() ||
         // Admins can update roles except other admins
         (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' && 
          request.resource.data.role in ['user', 'reviewer', 'admin'] && 
-         !(resource.data.role == 'admin' && request.auth.token.email != 'zac@codeshock.dev'))
+         !(resource.data.role == 'admin' && !isSuperAdmin()))
       );
     }
 
     // Allow listing users collection for admins and super admin
     match /users/{document=**} {
       allow list: if request.auth != null && (
-        request.auth.token.email == 'zac@codeshock.dev' || 
+        isSuperAdmin() || 
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
       );
     }

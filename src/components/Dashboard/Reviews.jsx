@@ -31,9 +31,16 @@ const Reviews = () => {
         // For each hackathon, get its submissions
         for (const hackathonDoc of hackathonsSnapshot.docs) {
           const hackathonData = hackathonDoc.data()
-          const submissionsSnapshot = await getDocs(
-            collection(db, 'hackathons', hackathonDoc.id, 'submissions')
-          )
+          const submissionsRef = collection(db, 'hackathons', hackathonDoc.id, 'submissions')
+
+          // Query submissions based on user role
+          const submissionsQuery = currentUserRole === 'admin'
+            ? submissionsRef // Admin sees all submissions
+            : currentUserRole === 'reviewer'
+              ? query(submissionsRef, where('status', '==', 'pending')) // Reviewers see only pending submissions
+              : query(submissionsRef, where('userId', '==', auth.currentUser.uid)) // Users see only their own submissions
+
+          const submissionsSnapshot = await getDocs(submissionsQuery)
 
           // Process each submission
           const hackathonSubmissions = await Promise.all(

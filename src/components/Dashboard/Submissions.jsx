@@ -90,11 +90,8 @@ const Submissions = () => {
         const hackathonData = hackathonDoc.data()
         const submissionsRef = collection(db, 'hackathons', hackathonDoc.id, 'submissions')
 
-        // Query submissions based on user role
-        const submissionsQuery = role === 'admin' || role === 'reviewer'
-          ? submissionsRef
-          : query(submissionsRef, where('userId', '==', userId))
-
+        // Only get submissions for the current user
+        const submissionsQuery = query(submissionsRef, where('userId', '==', userId))
         const submissionsSnapshot = await getDocs(submissionsQuery)
 
         // Add each submission with its hackathon data

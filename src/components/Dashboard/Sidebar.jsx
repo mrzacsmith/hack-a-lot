@@ -1,12 +1,14 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { getAuth } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore'
 import { db } from '../../firebase/config'
 
 const Sidebar = () => {
   const location = useLocation()
+  const navigate = useNavigate()
   const [userRole, setUserRole] = useState(null)
+  const [hasUnviewedComments, setHasUnviewedComments] = useState(false)
   const auth = getAuth()
 
   useEffect(() => {
@@ -19,6 +21,68 @@ const Sidebar = () => {
       }
     }
     fetchUserRole()
+  }, [auth.currentUser])
+
+  useEffect(() => {
+    if (!auth.currentUser) return
+
+    const unsubscribers = []
+
+    const setupReviewListeners = async () => {
+      try {
+        // Get all hackathons
+        const hackathonsSnapshot = await getDocs(collection(db, 'hackathons'))
+
+        for (const hackathonDoc of hackathonsSnapshot.docs) {
+          // Get submissions where user is the owner
+          const submissionsRef = collection(db, 'hackathons', hackathonDoc.id, 'submissions')
+          const submissionsQuery = query(submissionsRef, where('userId', '==', auth.currentUser.uid))
+
+          // Listen to submissions and their reviews
+          const submissionsUnsubscribe = onSnapshot(submissionsQuery, async (submissionsSnapshot) => {
+            let foundUnviewed = false
+
+            for (const submissionDoc of submissionsSnapshot.docs) {
+              if (foundUnviewed) break
+
+              // Set up real-time listener for reviews
+              const reviewsRef = collection(db, 'hackathons', hackathonDoc.id, 'submissions', submissionDoc.id, 'reviews')
+              const reviewsUnsubscribe = onSnapshot(reviewsRef, async (reviewsSnapshot) => {
+                if (foundUnviewed) return
+
+                for (const reviewDoc of reviewsSnapshot.docs) {
+                  if (foundUnviewed) break
+
+                  // Check if review is viewed
+                  const viewedRef = doc(db, 'users', auth.currentUser.uid, 'viewedReviews', reviewDoc.id)
+                  const viewedDoc = await getDoc(viewedRef)
+
+                  if (!viewedDoc.exists()) {
+                    foundUnviewed = true
+                    setHasUnviewedComments(true)
+                    break
+                  }
+                }
+
+                if (!foundUnviewed) {
+                  setHasUnviewedComments(false)
+                }
+              })
+              unsubscribers.push(reviewsUnsubscribe)
+            }
+          })
+          unsubscribers.push(submissionsUnsubscribe)
+        }
+      } catch (error) {
+        console.error('Error setting up review listeners:', error)
+      }
+    }
+
+    setupReviewListeners()
+
+    return () => {
+      unsubscribers.forEach(unsubscribe => unsubscribe())
+    }
   }, [auth.currentUser])
 
   // Define which roles can access each navigation item
@@ -48,6 +112,7 @@ const Sidebar = () => {
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
       ),
+      showNew: hasUnviewedComments && userRole === 'user'
     },
     {
       name: 'Reviews',
@@ -81,8 +146,22 @@ const Sidebar = () => {
     }
   ]
 
+  const handleSubmissionsClick = (item) => {
+    if (item.name === 'Submissions') {
+      if (item.showNew) {
+        // Only pass fromNew state when clicking NEW
+        navigate(item.href, { state: { fromNew: true } })
+      } else {
+        // Regular navigation for non-NEW clicks
+        navigate(item.href)
+      }
+    } else {
+      navigate(item.href)
+    }
+  }
+
   return (
-    <div className="flex flex-col h-full w-64 bg-white border-r">
+    <div className="flex flex-col h-full w-64 bg-white border-r border-gray-100">
       <div className="flex items-center flex-shrink-0 px-4 py-5">
         <span className="text-xl font-bold text-indigo-600">Dashboard</span>
       </div>
@@ -93,22 +172,31 @@ const Sidebar = () => {
           .map((item) => {
             const isActive = location.pathname === item.href
             return (
-              <Link
+              <button
                 key={item.name}
-                to={item.href}
-                className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${isActive
+                onClick={() => handleSubmissionsClick(item)}
+                className={`group flex items-center justify-between w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${isActive
                   ? 'bg-indigo-50 text-indigo-600'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  : 'text-gray-500 bg-white hover:bg-gray-50 hover:text-indigo-600'
                   }`}
               >
-                <div
-                  className={`mr-3 flex-shrink-0 ${isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-500'
-                    }`}
-                >
-                  {item.icon}
+                <div className="flex items-center">
+                  <div
+                    className={`mr-3 flex-shrink-0 transition-colors ${isActive
+                      ? 'text-indigo-600'
+                      : 'text-gray-400 group-hover:text-indigo-600'
+                      }`}
+                  >
+                    {item.icon}
+                  </div>
+                  {item.name}
                 </div>
-                {item.name}
-              </Link>
+                {item.showNew && (
+                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-600">
+                    NEW
+                  </span>
+                )}
+              </button>
             )
           })}
       </nav>

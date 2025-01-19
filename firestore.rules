@@ -57,6 +57,11 @@ service cloud.firestore {
          request.resource.data.role in ['user', 'reviewer', 'admin'] && 
          !(resource.data.role == 'admin' && !isSuperAdmin()))
       );
+
+      // Allow access to viewedReviews subcollection
+      match /viewedReviews/{reviewId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
     // Allow listing users collection for admins and super admin

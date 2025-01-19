@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getAuth } from 'firebase/auth'
-import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, serverTimestamp } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, serverTimestamp, setDoc } from 'firebase/firestore'
 import { db } from '../../firebase/config'
 import toast from 'react-hot-toast'
 
@@ -132,6 +132,7 @@ const Reviews = () => {
             const data = submissionDoc.data()
             console.log('Submission data:', data)
             const userDoc = await getDoc(doc(db, 'users', data.userId))
+            const userData = userDoc.exists() ? userDoc.data() : null
 
             // Get all reviews for this submission
             const reviewsRef = collection(db, 'hackathons', selectedHackathon, 'submissions', submissionDoc.id, 'reviews')
@@ -146,7 +147,9 @@ const Reviews = () => {
             return {
               id: submissionDoc.id,
               ...data,
-              userEmail: userDoc.exists() ? userDoc.data().email : 'Unknown',
+              userEmail: userData?.email || 'Unknown',
+              firstName: userData?.firstName || '',
+              lastName: userData?.lastName || '',
               reviews: reviews
             }
           })
@@ -167,6 +170,18 @@ const Reviews = () => {
     }
   }, [selectedHackathon, currentUserRole, auth.currentUser])
 
+  const markReviewAsViewed = async (submissionId, reviewId) => {
+    try {
+      const viewedRef = doc(db, 'users', auth.currentUser.uid, 'viewedReviews', reviewId)
+      await setDoc(viewedRef, {
+        submissionId,
+        viewedAt: serverTimestamp()
+      })
+    } catch (error) {
+      console.error('Error marking review as viewed:', error)
+    }
+  }
+
   const handleAddReview = async () => {
     if (!selectedSubmission || !reviewComment.trim() || score < 1 || score > 10) {
       toast.error('Please provide a valid review and score (1-10)')
@@ -185,18 +200,25 @@ const Reviews = () => {
         comment: reviewComment.trim(),
         score: score,
         createdAt: serverTimestamp(),
-        hackathonId: selectedHackathon
+        hackathonId: selectedHackathon,
+        submissionOwnerId: selectedSubmission.userId
       }
 
       // Add the review
       const reviewsRef = collection(db, 'hackathons', selectedHackathon, 'submissions', selectedSubmission.id, 'reviews')
-      await addDoc(reviewsRef, reviewData)
+      const reviewDoc = await addDoc(reviewsRef, reviewData)
 
       // Update submission status to 'Commented'
       const submissionRef = doc(db, 'hackathons', selectedHackathon, 'submissions', selectedSubmission.id)
       await updateDoc(submissionRef, {
-        status: 'Commented'
+        status: 'Commented',
+        lastReviewAt: serverTimestamp()
       })
+
+      // Mark as viewed for the reviewer (but not for the submission owner)
+      if (auth.currentUser.uid !== selectedSubmission.userId) {
+        await markReviewAsViewed(selectedSubmission.id, reviewDoc.id)
+      }
 
       // Refresh reviews for this submission
       const reviewsSnapshot = await getDocs(reviewsRef)
@@ -239,6 +261,18 @@ const Reviews = () => {
             ? { ...sub, status: 'In Review' }
             : sub
         ))
+      }
+
+      // Mark all reviews as viewed if the current user is the submission owner
+      if (auth.currentUser.uid === submission.userId && submission.reviews?.length > 0) {
+        const viewPromises = submission.reviews.map(async (review) => {
+          const viewedRef = doc(db, 'users', auth.currentUser.uid, 'viewedReviews', review.id)
+          await setDoc(viewedRef, {
+            submissionId: submission.id,
+            viewedAt: serverTimestamp()
+          })
+        })
+        await Promise.all(viewPromises)
       }
 
       setSelectedSubmission({
@@ -338,33 +372,127 @@ const Reviews = () => {
           <ul className="divide-y divide-gray-200">
             {submissions.map((submission) => (
               <li key={submission.id} className="px-4 py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3">
-                      <p className="text-sm font-medium text-indigo-600 truncate">
-                        {submission.url}
-                      </p>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${submission.status === 'Submitted' ? 'bg-yellow-100 text-yellow-800' :
-                        submission.status === 'In Review' ? 'bg-blue-100 text-blue-800' :
-                          'bg-green-100 text-green-800'
-                        }`}>
-                        {submission.status}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Submitted by: {submission.userEmail}
-                    </p>
-                    <div className="mt-2 flex items-center space-x-4">
-                      <button
-                        onClick={() => openReviewModal(submission)}
-                        className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                <div className="flex items-start justify-between">
+                  {/* Left Column */}
+                  <div className="flex flex-col space-y-3">
+                    {/* Icons Row */}
+                    <div className="flex items-center space-x-4">
+                      {/* GitHub Icon */}
+                      <a
+                        href={submission.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 hover:text-indigo-800"
+                        title="View GitHub Repository"
                       >
-                        Add Review
-                      </button>
-                      <span className="text-sm text-gray-500">
-                        {submission.reviews?.length || 0} reviews
-                      </span>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                        </svg>
+                      </a>
+
+                      {/* Video Icon */}
+                      {submission.videoUrl ? (
+                        <a
+                          href={submission.videoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 hover:text-indigo-800"
+                          title="Watch Demo Video"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </a>
+                      ) : (
+                        <span className="text-gray-400" title="No Demo Video Provided">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </span>
+                      )}
+
+                      {/* Deployed Site Icon */}
+                      {submission.deployedUrl ? (
+                        <a
+                          href={submission.deployedUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 hover:text-indigo-800"
+                          title="View Deployed Site"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                          </svg>
+                        </a>
+                      ) : (
+                        <span className="text-gray-400" title="No Deployed Site Available">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                          </svg>
+                        </span>
+                      )}
                     </div>
+
+                    {/* User Name with Email Tooltip */}
+                    <span
+                      className="text-sm text-gray-700 cursor-help"
+                      title={submission.userEmail}
+                    >
+                      {submission.firstName && submission.lastName
+                        ? `${submission.firstName} ${submission.lastName}`
+                        : submission.userEmail.split('@')[0]
+                      }
+                    </span>
+
+                    {/* Add Review Button */}
+                    <button
+                      onClick={() => openReviewModal(submission)}
+                      className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 w-fit"
+                    >
+                      Add Review
+                    </button>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="flex flex-col items-end space-y-2">
+                    {/* Status Badge */}
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${submission.status === 'Submitted' ? 'bg-yellow-100 text-yellow-800' :
+                      submission.status === 'In Review' ? 'bg-blue-100 text-blue-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                      {submission.status}
+                    </span>
+
+                    {/* Submission Date */}
+                    <p className="text-sm text-gray-500">
+                      Submitted: {submission.createdAt ? formatDateTime(submission.createdAt) : 'Date unavailable'}
+                    </p>
+
+                    {/* Review Count */}
+                    <button
+                      onClick={() => {
+                        setSelectedSubmission(submission)
+                        setReviewModalOpen(true)
+                      }}
+                      className="text-gray-300 hover:text-indigo-600 bg-white hover:bg-gray-50 p-2 rounded-md transition-colors !bg-white"
+                      title="View Reviews"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="ml-1 text-sm text-gray-600">
+                        {submission.reviews?.length || 0}
+                      </span>
+                    </button>
                   </div>
                 </div>
               </li>
@@ -411,51 +539,108 @@ const Reviews = () => {
                       </div>
                     </div>
                     <div className="mt-2">
-                      <a href={selectedSubmission.url} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline break-all">
-                        {selectedSubmission.url}
-                      </a>
-                    </div>
-                    <div className="mt-4">
-                      <div>
-                        <label htmlFor="score" className="block text-sm font-medium text-gray-700">Score (1-10)</label>
-                        <input
-                          type="number"
-                          name="score"
-                          id="score"
-                          min="1"
-                          max="10"
-                          value={score}
-                          onChange={(e) => setScore(parseInt(e.target.value))}
-                          className="mt-1 block w-20 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        />
-                      </div>
-                      <div className="mt-4">
-                        <label htmlFor="comment" className="block text-sm font-medium text-gray-700">Comment</label>
-                        <div className="relative">
-                          <textarea
-                            id="comment"
-                            name="comment"
-                            rows="12"
-                            value={reviewComment}
-                            onChange={(e) => setReviewComment(e.target.value)}
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                          />
-                          <div className="absolute bottom-2 left-2 flex space-x-2">
-                            <button type="button" className="p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Add emoji">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <div className="space-y-2">
+                        <div className="mt-2">
+                          <div className="flex items-center space-x-4">
+                            {/* GitHub Icon */}
+                            <a
+                              href={selectedSubmission.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-indigo-600 hover:text-indigo-800"
+                              title="View GitHub Repository"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
                               </svg>
-                            </button>
-                            <button type="button" className="p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Add code snippet">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                              </svg>
-                            </button>
-                            <button type="button" className="p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Add image">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                            </button>
+                            </a>
+
+                            {/* Video Icon */}
+                            {selectedSubmission.videoUrl ? (
+                              <a
+                                href={selectedSubmission.videoUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-indigo-600 hover:text-indigo-800"
+                                title="Watch Demo Video"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                              </a>
+                            ) : (
+                              <span className="text-gray-400" title="No Demo Video Provided">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                              </span>
+                            )}
+
+                            {/* Deployed Site Icon */}
+                            {selectedSubmission.deployedUrl ? (
+                              <a
+                                href={selectedSubmission.deployedUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-indigo-600 hover:text-indigo-800"
+                                title="View Deployed Site"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                                </svg>
+                              </a>
+                            ) : (
+                              <span className="text-gray-400" title="No Deployed Site Available">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                                </svg>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="mt-4">
+                          <div>
+                            <label htmlFor="score" className="block text-sm font-medium text-gray-700">Score (1-10)</label>
+                            <input
+                              type="number"
+                              name="score"
+                              id="score"
+                              min="1"
+                              max="10"
+                              value={score}
+                              onChange={(e) => setScore(parseInt(e.target.value))}
+                              className="mt-1 block w-20 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            />
+                          </div>
+                          <div className="mt-4">
+                            <label htmlFor="comment" className="block text-sm font-medium text-gray-700">Comment</label>
+                            <div className="relative">
+                              <textarea
+                                id="comment"
+                                name="comment"
+                                rows="12"
+                                value={reviewComment}
+                                onChange={(e) => setReviewComment(e.target.value)}
+                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                              />
+                              <div className="absolute bottom-2 left-2 flex space-x-2">
+                                <button type="button" className="p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Add emoji">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                </button>
+                                <button type="button" className="p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Add code snippet">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                  </svg>
+                                </button>
+                                <button type="button" className="p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Add image">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>

@@ -784,29 +784,48 @@ const Hackathons = () => {
                     {hackathon.status.charAt(0).toUpperCase() + hackathon.status.slice(1)}
                   </span>
                 </div>
+                {hackathon.reward && (
+                  <div className="group relative">
+                    <span className="text-green-600 font-semibold cursor-help">$</span>
+                    {/* Tooltip */}
+                    <div className="absolute right-0 w-auto p-2 min-w-max rounded-md shadow-md
+                      text-white bg-gray-900 text-xs
+                      transition-all duration-100 scale-0 origin-right group-hover:scale-100
+                      z-50">
+                      Reward: {hackathon.reward}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <p className="mt-4 text-sm text-gray-600">{hackathon.description}</p>
 
               <div className="mt-4 space-y-2 text-sm text-gray-500">
-                <div className="flex items-center space-x-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p>Start: {formatDate(hackathon.startDate)}</p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p>End: {formatDate(hackathon.endDate)}</p>
-                </div>
+                {/* Registration Deadline - Moved to top */}
                 <div className="flex items-center space-x-2">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
                   <p>Register by: {formatDate(hackathon.registrationDeadline)}</p>
                 </div>
+
+                {/* Start Date */}
+                <div className="flex items-center space-x-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p>Starts: {formatDate(hackathon.startDate)}</p>
+                </div>
+
+                {/* End Date */}
+                <div className="flex items-center space-x-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p>Ends: {formatDate(hackathon.endDate)}</p>
+                </div>
+
+                {/* Max Participants */}
                 <div className="flex items-center space-x-2">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />

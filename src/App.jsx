@@ -17,6 +17,7 @@ import Hackathons from './components/Dashboard/Hackathons'
 import Settings from './components/Settings'
 import ProtectedRoute from './components/ProtectedRoute'
 import HackathonRegistration from './pages/HackathonRegistration'
+import HackathonDetails from './pages/HackathonDetails'
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -68,6 +69,8 @@ function App() {
           }
         />
         <Route path="/hackathons/:hackathonId/register" element={<HackathonRegistration />} />
+        <Route path="/hackathons/:id" element={<HackathonDetails />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   )

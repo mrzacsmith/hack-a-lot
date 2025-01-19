@@ -27,11 +27,18 @@ service cloud.firestore {
       return request.auth.token.email == 'zac@codeshock.dev';
     }
 
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
     // Users collection
     match /users/{userId} {
-      // Allow reading and listing user documents for all authenticated users
-      allow read, list: if request.auth != null;
+      // Allow read if the profile is public or if the user is the owner
+      allow read: if resource.data.profile.isProfilePublic == true || request.auth.uid == userId;
       
+      // Allow write only if the user is the owner
+      allow write: if request.auth.uid == userId;
+
       // Allow users to create their own document with 'user' role
       allow create: if request.auth != null && 
                    request.auth.uid == userId && 
@@ -43,10 +50,7 @@ service cloud.firestore {
       allow update: if request.auth != null && (
         // Users can update their own profile data
         (request.auth.uid == userId && (
-          // Only allow updating these specific fields
-          request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['firstName', 'lastName', 'photoURL', 'emailNotifications']) &&
-          // Preserve existing role and email
+          // Allow updating profile data
           request.resource.data.role == resource.data.role &&
           request.resource.data.email == resource.data.email
         )) ||
@@ -57,6 +61,12 @@ service cloud.firestore {
          request.resource.data.role in ['user', 'reviewer', 'admin'] && 
          !(resource.data.role == 'admin' && !isSuperAdmin()))
       );
+
+      // Allow reading the profile URL for public profiles
+      match /profile {
+        allow read: if resource.data.isProfilePublic == true || isOwner(userId);
+        allow write: if isOwner(userId);
+      }
 
       // Allow access to viewedReviews subcollection
       match /viewedReviews/{reviewId} {

@@ -110,9 +110,10 @@ const Hackathons = () => {
     const unsubscribe = onSnapshot(collection(db, 'hackathons'), (snapshot) => {
       const hackathonsList = snapshot.docs.map(doc => {
         const data = doc.data()
-        const startDateTime = data.startDate?.toDate()
-        const endDateTime = data.endDate?.toDate()
-        const registrationDateTime = data.registrationDeadline?.toDate()
+        // Handle both Timestamp and string formats
+        const startDateTime = data.startDate?.toDate ? data.startDate.toDate() : new Date(data.startDate)
+        const endDateTime = data.endDate?.toDate ? data.endDate.toDate() : new Date(data.endDate)
+        const registrationDateTime = data.registrationDeadline?.toDate ? data.registrationDeadline.toDate() : new Date(data.registrationDeadline)
 
         return {
           id: doc.id,
@@ -175,6 +176,18 @@ const Hackathons = () => {
   const handleCreateHackathon = async (e) => {
     e.preventDefault()
     try {
+      // Validate required fields first
+      if (!newHackathon.startDate || !newHackathon.startTime || !newHackathon.registrationDeadline) {
+        toast.error('Please fill in all required date fields')
+        return
+      }
+
+      // For regular hackathons, validate end date/time
+      if (newHackathon.type !== 'lightning' && (!newHackathon.endDate || !newHackathon.endTime)) {
+        toast.error('Please fill in end date and time')
+        return
+      }
+
       let imageUrl = ''
       if (imageFile) {
         const storage = getStorage()
@@ -185,13 +198,18 @@ const Hackathons = () => {
 
       // Create Date objects with the correct time
       const [startHours, startMinutes] = newHackathon.startTime.split(':').map(Number)
-      const [endHours, endMinutes] = newHackathon.endTime.split(':').map(Number)
-
       const startDateTime = new Date(newHackathon.startDate)
       startDateTime.setHours(startHours, startMinutes, 0)
 
-      const endDateTime = new Date(newHackathon.endDate)
-      endDateTime.setHours(endHours, endMinutes, 0)
+      let endDateTime
+      if (newHackathon.type === 'lightning') {
+        // For lightning rounds, calculate end time based on duration
+        endDateTime = new Date(startDateTime.getTime() + (newHackathon.duration * 60 * 1000))
+      } else {
+        const [endHours, endMinutes] = newHackathon.endTime.split(':').map(Number)
+        endDateTime = new Date(newHackathon.endDate)
+        endDateTime.setHours(endHours, endMinutes, 0)
+      }
 
       // Compare only the dates for registration deadline
       const regDate = new Date(newHackathon.registrationDeadline)
@@ -206,7 +224,8 @@ const Hackathons = () => {
         return
       }
 
-      if (endDateTime <= startDateTime) {
+      // For lightning rounds, we don't need this check since end time is always after start time
+      if (newHackathon.type !== 'lightning' && endDateTime <= startDateTime) {
         toast.error('End date must be after the start date')
         return
       }

@@ -21,5 +21,28 @@ service firebase.storage {
                    && request.resource.size < 10 * 1024 * 1024
                    && request.resource.contentType.matches('image/.*');
     }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Header images can only be uploaded by the owner
+    match /header-images/{userId}/{imageId} {
+      // Allow read for everyone since these images are public
+      allow read: if true;
+      
+      // Only allow upload/delete if it's the user's own header image folder
+      allow write: if isOwner(userId);
+
+      // Validate upload properties
+      allow create: if request.resource.size < 5 * 1024 * 1024 // 5MB
+                   && request.resource.contentType.matches('image/.*')
+                   && isOwner(userId);
+    }
   }
 } 

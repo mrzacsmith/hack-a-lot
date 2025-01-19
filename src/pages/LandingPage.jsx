@@ -245,16 +245,17 @@ const LandingPage = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const hackathonsList = snapshot.docs.map(doc => {
         const data = doc.data()
-        const startDateTime = data.startDate?.toDate()
-        const endDateTime = data.endDate?.toDate()
-        const registrationDateTime = data.registrationDeadline?.toDate()
+        // Handle both Timestamp and string formats
+        const startDateTime = data.startDate?.toDate ? data.startDate.toDate() : new Date(data.startDate)
+        const endDateTime = data.endDate?.toDate ? data.endDate.toDate() : new Date(data.endDate)
+        const registrationDateTime = data.registrationDeadline?.toDate ? data.registrationDeadline.toDate() : new Date(data.registrationDeadline)
 
         return {
           id: doc.id,
           ...data,
-          startDate: startDateTime,
-          endDate: endDateTime,
-          registrationDeadline: registrationDateTime,
+          startDate: startDateTime || new Date(),
+          endDate: endDateTime || new Date(),
+          registrationDeadline: registrationDateTime || new Date(),
           startTime: startDateTime ? formatTime(startDateTime) : '',
           endTime: endDateTime ? formatTime(endDateTime) : ''
         }

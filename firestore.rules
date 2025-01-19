@@ -207,5 +207,18 @@ service cloud.firestore {
         );
       }
     }
+
+    // Bug Reports collection
+    match /bugReports/{reportId} {
+      // Allow any authenticated user to create bug reports with specific fields
+      allow create: if request.auth != null
+                   && request.resource.data.userId == request.auth.uid
+                   && request.resource.data.timestamp is timestamp
+                   && request.resource.data.status == 'new'
+                   && request.resource.data.resolved == false;
+      
+      // Allow admins to read and manage bug reports
+      allow read, update, delete: if request.auth != null && isAdmin();
+    }
   }
 } 

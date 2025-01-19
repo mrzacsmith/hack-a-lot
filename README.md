@@ -62,3 +62,74 @@ The application uses a carefully selected color palette that reflects the Sisu b
    - Success/Active: `sisu-green`
    - Error/Warning: `sisu-red`
    - Info: `sisu-blue`
+
+## Deployment Instructions
+
+### Prerequisites
+- Node.js and npm installed
+- Firebase CLI installed (`npm install -g firebase-tools`)
+- Firebase project configured
+- Proper access rights to the repository and Firebase project
+
+### Version Management
+The application uses semantic versioning (MAJOR.MINOR.PATCH). To update the version:
+
+```bash
+# For patch updates (bug fixes, minor changes)
+npm run version:patch
+
+# For minor updates (new features, backwards-compatible)
+npm run version:minor
+
+# For major updates (breaking changes)
+npm run version:major
+
+# For specific version
+npm run version:specific <version>
+```
+
+### Deployment Steps
+
+1. **Commit Your Changes**
+   ```bash
+   git add .
+   git commit -m "your commit message"
+   ```
+   This will:
+   - Stage all changes
+   - Create a commit with your changes
+
+2. **Update Version**
+   ```bash
+   npm run version:patch  # or version:minor, version:major as needed
+   ```
+   This will:
+   - Update the version in package.json
+   - Create a git commit for the version change
+   - Create a git tag for the version
+
+3. **Push Changes to GitHub**
+   ```bash
+   git push && git push --tags
+   ```
+   This will:
+   - Push the code changes to the main branch
+   - Push the version tags
+
+4. **Deploy to Firebase**
+   ```bash
+   npm run deploy
+   ```
+   This will:
+   - Build the application with the new version
+   - Deploy to Firebase hosting, Firestore rules, and Storage rules
+
+### Verifying Deployment
+- Check the deployed application at [https://hack-a-lot.web.app](https://hack-a-lot.web.app)
+- Verify the version number in the profile dropdown menu
+- Test the new features or fixes that were deployed
+
+### Troubleshooting
+- If the version number isn't updating, ensure you ran `npm run deploy` instead of just `firebase deploy`
+- If deployment fails, check the Firebase Console for more detailed error messages
+- For permission issues, ensure you're logged into the correct Firebase account

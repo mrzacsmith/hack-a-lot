@@ -5,10 +5,12 @@ import { doc, getDoc, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import app from '../firebase/config'
 import sisuLogo from '../assets/sisu-logo2.png'
+import BugReportModal from './BugReportModal'
 
 const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
   const [isOpen, setIsOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isBugModalOpen, setIsBugModalOpen] = useState(false)
   const [user, setUser] = useState(null)
   const navigate = useNavigate()
   const auth = getAuth(app)
@@ -124,7 +126,13 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-sisu-blue"
                         onClick={() => setIsProfileOpen(false)}
                       >
-                        Settings
+                        <div className="flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          Settings
+                        </div>
                       </Link>
                       <button
                         onClick={() => {
@@ -142,9 +150,22 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
                       </button>
                       <div className="px-4 py-2 text-xs text-gray-500 border-t">
                         <div className="flex items-center justify-between">
-                          <span className="text-base inline-block transform rotate-45">🪲</span>
+                          <div className="relative group">
+                            <button
+                              onClick={() => {
+                                setIsBugModalOpen(true)
+                                setIsProfileOpen(false)
+                              }}
+                              className="text-base inline-block hover:text-sisu-blue"
+                            >
+                              🪲
+                            </button>
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 text-xs font-medium text-white bg-gray-900 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                              Report a Bug
+                            </div>
+                          </div>
                           <div className="italic">
-                            Version {import.meta.env.VITE_APP_VERSION || '1.0.09'}
+                            Version {import.meta.env.VITE_APP_VERSION || '1.0.10'}
                           </div>
                         </div>
                       </div>
@@ -249,6 +270,12 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
           </div>
         </div>
       )}
+
+      {/* Bug Report Modal */}
+      <BugReportModal
+        isOpen={isBugModalOpen}
+        onClose={() => setIsBugModalOpen(false)}
+      />
     </nav>
   )
 }

@@ -384,9 +384,13 @@ const LandingPage = () => {
         <div className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center">
-              <div className="flex items-center justify-center gap-4">
-                <h2 className="text-5xl font-extrabold text-gray-900 flex items-center gap-4 sm:text-6xl">
-                  <span>Build Something Extraordinary</span>
+              <div className="flex flex-col sm:flex-row items-center justify-center whitespace-nowrap gap-2 sm:gap-4">
+                <h2 className="text-3xl font-extrabold text-gray-900 flex flex-col sm:flex-row items-center gap-1 sm:gap-4 sm:text-4xl leading-tight">
+                  <div className="flex flex-col items-center sm:flex-row sm:items-center gap-1 sm:gap-4">
+                    <span className="text-4xl sm:text-4xl">Build</span>
+                    <span className="text-4xl sm:text-4xl">Something</span>
+                    <span className="text-4xl sm:text-4xl">Extraordinary</span>
+                  </div>
                   <span>-</span>
                   <span>Find your Sisu</span>
                   <button

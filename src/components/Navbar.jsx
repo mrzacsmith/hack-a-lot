@@ -4,6 +4,7 @@ import { getAuth, signOut } from 'firebase/auth'
 import { doc, getDoc, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import app from '../firebase/config'
+import sisuLogo from '../assets/sisu-logo2.png'
 
 const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
   const [isOpen, setIsOpen] = useState(false)
@@ -50,35 +51,36 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
         <div className="flex justify-between h-16">
           <div className="flex">
             <Link to="/" className="flex-shrink-0 flex items-center">
-              <span className="text-xl font-bold text-indigo-600">HackALot</span>
+              <img
+                src={sisuLogo}
+                alt="Sisu Logo"
+                className="w-[266px] h-[80px]"
+                style={{ objectFit: 'contain' }}
+              />
             </Link>
           </div>
 
           {/* Desktop menu */}
           <div className="hidden sm:flex sm:items-center sm:space-x-4">
-            {isAuthenticated ? (
-              <Link to="/dashboard" className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">
+            {isAuthenticated && (
+              <Link to="/dashboard" className="text-gray-700 hover:text-sisu-blue px-3 py-2 rounded-md text-base font-medium">
                 Dashboard
               </Link>
-            ) : (
-              <Link to="/" className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">
-                Home
-              </Link>
             )}
-            <Link to="/about" className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">
+            <Link to="/about" className="text-gray-700 hover:text-sisu-blue px-3 py-2 rounded-md text-base font-medium">
               About Sisu
             </Link>
             {!isAuthenticated ? (
               <>
                 <Link
                   to="/login"
-                  className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium"
+                  className="text-gray-700 hover:text-sisu-blue px-3 py-2 rounded-md text-base font-medium"
                 >
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  className="bg-indigo-600 text-white hover:bg-indigo-700 px-4 py-2 rounded-md text-sm font-medium"
+                  className="bg-sisu-blue text-white hover:bg-sisu-blue-dark hover:text-black shadow-sm hover:shadow-md px-4 py-2 rounded-md text-base font-medium transition-all duration-200"
                 >
                   Register
                 </Link>
@@ -89,7 +91,7 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
                 <div className="relative">
                   <button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
-                    className="flex items-center space-x-2 text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 px-3 py-2 rounded-md text-sm font-medium"
+                    className="flex items-center space-x-2 text-gray-700 hover:text-sisu-blue hover:bg-blue-50 px-3 py-2 rounded-md text-base font-medium"
                   >
                     {user?.photoURL ? (
                       <img
@@ -98,7 +100,7 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
                         className="h-8 w-8 rounded-full object-cover ring-2 ring-gray-200"
                       />
                     ) : (
-                      <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium ring-2 ring-gray-200">
+                      <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center text-sisu-blue font-medium ring-2 ring-gray-200">
                         {user?.email?.[0].toUpperCase() || 'U'}
                       </div>
                     )}
@@ -119,7 +121,7 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
                       <Link
                         to="/settings"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-sisu-blue"
                         onClick={() => setIsProfileOpen(false)}
                       >
                         Settings
@@ -129,7 +131,7 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
                           handleLogout()
                           setIsProfileOpen(false)
                         }}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50"
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-sisu-blue"
                       >
                         Logout
                       </button>
@@ -144,7 +146,7 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
           <div className="flex items-center sm:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-indigo-600 hover:bg-gray-100"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-sisu-blue hover:bg-blue-50"
             >
               <span className="sr-only">Open main menu</span>
               {!isOpen ? (
@@ -175,7 +177,7 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
                       className="h-10 w-10 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium">
+                    <div className="h-10 w-10 rounded-full bg-sisu-blue flex items-center justify-center text-white font-medium">
                       {user?.email?.[0].toUpperCase() || 'U'}
                     </div>
                   )}
@@ -186,24 +188,17 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
                 </div>
               </div>
             )}
-            {isAuthenticated ? (
+            {isAuthenticated && (
               <Link
                 to="/dashboard"
-                className="block px-3 py-2 text-gray-700 hover:text-indigo-600 hover:bg-gray-100 text-base font-medium"
+                className="block px-3 py-2 text-gray-700 hover:text-sisu-blue hover:bg-blue-50 text-base font-medium"
               >
                 Dashboard
-              </Link>
-            ) : (
-              <Link
-                to="/"
-                className="block px-3 py-2 text-gray-700 hover:text-indigo-600 hover:bg-gray-100 text-base font-medium"
-              >
-                Home
               </Link>
             )}
             <Link
               to="/about"
-              className="block px-3 py-2 text-gray-700 hover:text-indigo-600 hover:bg-gray-100 text-base font-medium"
+              className="block px-3 py-2 text-gray-700 hover:text-sisu-blue hover:bg-blue-50 text-base font-medium"
             >
               About Sisu
             </Link>
@@ -211,13 +206,13 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
               <>
                 <Link
                   to="/login"
-                  className="block px-3 py-2 text-gray-700 hover:text-indigo-600 hover:bg-gray-100 text-base font-medium"
+                  className="block px-3 py-2 text-gray-700 hover:text-sisu-blue hover:bg-blue-50 text-base font-medium"
                 >
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  className="block px-3 py-2 text-gray-700 hover:text-indigo-600 hover:bg-gray-100 text-base font-medium"
+                  className="block px-3 py-2 text-gray-700 hover:text-sisu-blue hover:bg-blue-50 text-base font-medium"
                 >
                   Register
                 </Link>
@@ -226,13 +221,13 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
               <>
                 <Link
                   to="/settings"
-                  className="block px-3 py-2 text-gray-700 hover:text-indigo-600 hover:bg-gray-100 text-base font-medium"
+                  className="block px-3 py-2 text-gray-700 hover:text-sisu-blue hover:bg-blue-50 text-base font-medium"
                 >
                   Settings
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="block w-full text-left px-3 py-2 text-gray-700 hover:text-indigo-600 hover:bg-gray-100 text-base font-medium"
+                  className="block w-full text-left px-3 py-2 text-gray-700 hover:text-sisu-blue hover:bg-blue-50 text-base font-medium"
                 >
                   Logout
                 </button>

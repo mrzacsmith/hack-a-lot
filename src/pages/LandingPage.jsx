@@ -311,16 +311,16 @@ const LandingPage = () => {
     <div className="bg-gray-50">
       {/* Hero Section - Only show when not authenticated */}
       {!user && (
-        <div className="relative overflow-hidden bg-gradient-to-br from-indigo-400 to-indigo-900">
+        <div className="relative overflow-hidden bg-gradient-to-br from-sisu-blue-light to-sisu-blue-dark">
           <div className="max-w-7xl mx-auto">
             <div className="relative z-10 lg:grid lg:grid-cols-2 lg:gap-8">
               {/* Text Content */}
               <div className="relative pb-8 sm:pb-16 md:pb-20 lg:pb-28 xl:pb-32">
                 <main className="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
                   <div className="sm:text-center lg:text-left">
-                    <h1 className="text-4xl tracking-tight font-extrabold text-white sm:text-5xl md:text-6xl">
+                    <h1 className="text-5xl tracking-tight font-extrabold text-white sm:text-6xl md:text-7xl">
                       <span className="block">Discover Your</span>
-                      <span className="block text-indigo-200">Sisu</span>
+                      <span className="block text-sisu-yellow text-[125%] drop-shadow-[0_4px_4px_rgba(0,0,0,0.3)]">Sisu</span>
                     </h1>
                     <p className="mt-3 text-base text-gray-100 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
                       A platform designed for creators, dreamers, and problem-solvers to innovate with purpose and tenacity. Join us to transform barriers into breakthroughs and ideas into extraordinary solutions.
@@ -329,7 +329,7 @@ const LandingPage = () => {
                       <div className="rounded-md shadow">
                         <Link
                           to="/register"
-                          className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-indigo-700 bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10"
+                          className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-sisu-blue bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10"
                         >
                           Start Building
                         </Link>
@@ -337,7 +337,7 @@ const LandingPage = () => {
                       <div className="mt-3 sm:mt-0 sm:ml-3">
                         <Link
                           to="/login"
-                          className="w-full flex items-center justify-center px-8 py-3 border border-white text-base font-medium rounded-md text-white hover:bg-indigo-800 md:py-4 md:text-lg md:px-10"
+                          className="w-full flex items-center justify-center px-8 py-3 border border-white text-base font-medium rounded-md text-white hover:bg-sisu-blue md:py-4 md:text-lg md:px-10"
                         >
                           Sign In
                         </Link>
@@ -385,13 +385,13 @@ const LandingPage = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <div className="flex items-center justify-center gap-4">
-                <h2 className="text-3xl font-extrabold text-gray-900 flex items-center gap-4">
+                <h2 className="text-5xl font-extrabold text-gray-900 flex items-center gap-4 sm:text-6xl">
                   <span>Build Something Extraordinary</span>
                   <span>-</span>
                   <span>Find your Sisu</span>
                   <button
                     onClick={() => setIsModalOpen(true)}
-                    className="inline-flex items-center justify-center p-1.5 rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 transition-colors"
+                    className="inline-flex items-center justify-center p-1.5 rounded-full bg-blue-50 text-sisu-blue hover:bg-blue-100 transition-colors"
                     aria-label="Play video"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -410,7 +410,7 @@ const LandingPage = () => {
         <div className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center">
-              <h2 className="text-3xl font-extrabold text-gray-900">The Spirit of Sisu</h2>
+              <h2 className="text-4xl font-extrabold text-gray-900 sm:text-5xl text-[93%]">The Spirit of Sisu</h2>
               <p className="mt-4 text-xl text-gray-500">Grit, courage, and unwavering determination</p>
               <div className="mt-12 aspect-video w-full max-w-4xl mx-auto">
                 {renderVideoContent()}
@@ -588,7 +588,7 @@ const LandingPage = () => {
 
       {/* Find Your Sisu Section - Only show when not authenticated */}
       {!user && (
-        <div className="py-16 bg-gradient-to-br from-indigo-400 to-indigo-900">
+        <div className="py-16 bg-gradient-to-br from-sisu-blue-light to-sisu-blue-dark">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <h2 className="text-3xl font-extrabold text-white sm:text-4xl">Find Your Sisu</h2>
@@ -598,13 +598,13 @@ const LandingPage = () => {
               <div className="mt-8 flex justify-center gap-4">
                 <Link
                   to="/register"
-                  className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-indigo-700 bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10"
+                  className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-sisu-blue bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10"
                 >
                   Start Building
                 </Link>
                 <Link
                   to="/hackathons"
-                  className="inline-flex items-center px-8 py-3 border border-white text-base font-medium rounded-md text-white hover:bg-indigo-800 md:py-4 md:text-lg md:px-10"
+                  className="inline-flex items-center px-8 py-3 border border-white text-base font-medium rounded-md text-white hover:bg-sisu-blue md:py-4 md:text-lg md:px-10"
                 >
                   Browse Hackathons
                 </Link>
@@ -624,7 +624,7 @@ const LandingPage = () => {
             </div>
             <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
               <div className="bg-white rounded-lg shadow-lg p-6">
-                <div className="text-indigo-600 mb-4">
+                <div className="text-sisu-blue mb-4">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
@@ -633,7 +633,7 @@ const LandingPage = () => {
                 <p className="mt-2 text-gray-500">Connect with like-minded innovators and build together in a supportive environment.</p>
               </div>
               <div className="bg-white rounded-lg shadow-lg p-6">
-                <div className="text-indigo-600 mb-4">
+                <div className="text-sisu-blue mb-4">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                   </svg>
@@ -642,7 +642,7 @@ const LandingPage = () => {
                 <p className="mt-2 text-gray-500">Sharpen your technical skills and learn from real-world project experiences.</p>
               </div>
               <div className="bg-white rounded-lg shadow-lg p-6">
-                <div className="text-indigo-600 mb-4">
+                <div className="text-sisu-blue mb-4">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>

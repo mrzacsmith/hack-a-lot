@@ -23,7 +23,7 @@ const AboutSisu = () => {
           <div className="lg:text-center">
             <h2 className="text-3xl font-extrabold text-gray-900">What is Sisu?</h2>
             <p className="mt-4 max-w-2xl text-xl text-gray-500 lg:mx-auto">
-              Sisu is a Finnish concept that can be roughly translated as stoic determination, grit, resilience, and hardiness.
+              Sisu is a Finnish concept that can be roughly translated as <strong>stoic determination</strong>, <strong>grit</strong>, <strong>resilience</strong>, and <strong>hardiness</strong>.
               It's about pushing through against all odds and taking action in the face of adversity.
             </p>
           </div>
@@ -74,36 +74,87 @@ const AboutSisu = () => {
           <div className="lg:text-center mb-12">
             <h2 className="text-3xl font-extrabold text-gray-900">Modern Examples of Sisu</h2>
             <p className="mt-4 max-w-2xl text-xl text-gray-500 lg:mx-auto">
-              Sisu manifests in various ways in modern life, from entrepreneurship to personal challenges
+              Sisu manifests in various ways in modern life, from entrepreneurship to personal challenges.
+              These individuals demonstrate that Sisu isn't just about personal achievement – it's about
+              maintaining unwavering determination in the face of seemingly insurmountable challenges.
             </p>
           </div>
 
           <div className="space-y-8">
-            <div className="bg-white p-6 rounded-lg shadow-lg">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Entrepreneurs and Innovators</h3>
-              <p className="text-gray-500 mb-4">
-                Modern entrepreneurs embody Sisu when they persist through multiple failures, pivot their
-                businesses in challenging times, and continue pushing forward despite setbacks. They demonstrate
-                the resilience to transform obstacles into opportunities.
-              </p>
+            <div className="bg-white p-8 rounded-lg shadow-lg">
+              <h3 className="text-2xl font-semibold text-gray-900 mb-4">Entrepreneurs and Innovators</h3>
+              <div className="prose prose-indigo max-w-none">
+                <p className="text-gray-600 mb-4 leading-relaxed">
+                  Modern entrepreneurs embody Sisu when they persist through multiple failures, pivot their
+                  businesses in challenging times, and continue pushing forward despite setbacks. Consider these examples:
+                </p>
+                <ul className="list-disc pl-6 space-y-4 text-gray-600">
+                  <li>
+                    <strong>Sara Blakely</strong> faced rejection after rejection while developing Spanx,
+                    working as a fax machine saleswoman by day and spending nights and weekends perfecting her product.
+                  </li>
+                  <li>
+                    <strong>James Dyson</strong> created 5,126 failed prototypes before finally succeeding
+                    with his bagless vacuum cleaner.
+                  </li>
+                  <li>
+                    <strong>Reid Hoffman's</strong> journey with LinkedIn began after his first social network,
+                    SocialNet, struggled - demonstrating that persistence through failure often leads to greater success.
+                  </li>
+                </ul>
+              </div>
             </div>
 
-            <div className="bg-white p-6 rounded-lg shadow-lg">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Athletes and Competitors</h3>
-              <p className="text-gray-500 mb-4">
-                Athletes who overcome injuries, setbacks, and fierce competition demonstrate Sisu. Their ability
-                to push beyond physical and mental limits, especially in endurance sports and challenging
-                competitions, exemplifies this spirit.
-              </p>
+            <div className="bg-white p-8 rounded-lg shadow-lg">
+              <h3 className="text-2xl font-semibold text-gray-900 mb-4">Athletes and Competitors</h3>
+              <div className="prose prose-indigo max-w-none">
+                <p className="text-gray-600 mb-4 leading-relaxed">
+                  Athletes who overcome injuries, setbacks, and fierce competition demonstrate Sisu.
+                  Here are inspiring examples:
+                </p>
+                <ul className="list-disc pl-6 space-y-4 text-gray-600">
+                  <li>
+                    <strong>Bethany Hamilton</strong> returned to professional surfing just one month after
+                    losing her arm in a shark attack, going on to win multiple championships.
+                  </li>
+                  <li>
+                    <strong>Diana Nyad</strong> exemplified extraordinary Sisu when, after four failed attempts
+                    and at age 64, she finally completed her swim from Cuba to Florida, battling jellyfish,
+                    sharks, and extreme exhaustion for 53 hours.
+                  </li>
+                  <li>
+                    <strong>Kyle Maynard</strong>, born with congenital amputation that left him with no arms
+                    or legs, became a champion wrestler and the first quadruple amputee to climb Mount
+                    Kilimanjaro without prosthetics.
+                  </li>
+                </ul>
+              </div>
             </div>
 
-            <div className="bg-white p-6 rounded-lg shadow-lg">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Social Innovators</h3>
-              <p className="text-gray-500 mb-4">
-                Those who work tirelessly for social change, often against significant opposition and with
-                limited resources, show Sisu in their unwavering commitment to making the world better,
-                regardless of the obstacles they face.
-              </p>
+            <div className="bg-white p-8 rounded-lg shadow-lg">
+              <h3 className="text-2xl font-semibold text-gray-900 mb-4">Social Innovators</h3>
+              <div className="prose prose-indigo max-w-none">
+                <p className="text-gray-600 mb-4 leading-relaxed">
+                  Those who work tirelessly for social change, often against significant opposition and with
+                  limited resources, show Sisu in their unwavering commitment:
+                </p>
+                <ul className="list-disc pl-6 space-y-4 text-gray-600">
+                  <li>
+                    <strong>Malala Yousafzai</strong> continued advocating for girls' education even after
+                    surviving an assassination attempt.
+                  </li>
+                  <li>
+                    <strong>Bryan Stevenson</strong>, founder of the Equal Justice Initiative, has spent
+                    decades fighting for wrongly condemned prisoners on death row, often facing intense
+                    opposition and systemic barriers.
+                  </li>
+                  <li>
+                    <strong>Dr. Paul Farmer</strong> dedicated his life to providing healthcare in impoverished
+                    areas, building Partners in Health from a single clinic in Haiti to a global organization,
+                    often walking hours through mountains to reach patients.
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>

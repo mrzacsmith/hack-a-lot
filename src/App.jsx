@@ -18,6 +18,7 @@ import Settings from './components/Settings'
 import ProtectedRoute from './components/ProtectedRoute'
 import HackathonRegistration from './pages/HackathonRegistration'
 import HackathonDetails from './pages/HackathonDetails'
+import AboutSisu from './pages/AboutSisu'
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -46,6 +47,7 @@ function App() {
         <Route path="/login" element={<Login setIsAuthenticated={setIsAuthenticated} />} />
         <Route path="/register" element={<Register setIsAuthenticated={setIsAuthenticated} />} />
         <Route path="/reset-password" element={<PasswordReset />} />
+        <Route path="/about" element={<AboutSisu />} />
         <Route
           path="/dashboard"
           element={

@@ -65,6 +65,9 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
                 Home
               </Link>
             )}
+            <Link to="/about" className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">
+              About Sisu
+            </Link>
             {!isAuthenticated ? (
               <>
                 <Link
@@ -198,6 +201,12 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
                 Home
               </Link>
             )}
+            <Link
+              to="/about"
+              className="block px-3 py-2 text-gray-700 hover:text-indigo-600 hover:bg-gray-100 text-base font-medium"
+            >
+              About Sisu
+            </Link>
             {!isAuthenticated ? (
               <>
                 <Link

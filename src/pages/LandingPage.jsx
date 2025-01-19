@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { db } from '../firebase/config'
+import Lottie from 'lottie-react'
+import innovationAnimation from '../assets/innovation-animation.json'
 
 const CountdownTimer = ({ endDate }) => {
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft())
@@ -51,12 +53,142 @@ const CountdownTimer = ({ endDate }) => {
   )
 }
 
+// Video Modal Component
+const VideoModal = ({ isOpen, onClose, videoId }) => {
+  const modalRef = React.useRef(null);
+  const previousFocusRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      // Store the current focused element
+      previousFocusRef.current = document.activeElement;
+      // Focus the modal
+      modalRef.current?.focus();
+    } else if (previousFocusRef.current) {
+      // Restore focus when modal closes
+      previousFocusRef.current.focus();
+    }
+  }, [isOpen]);
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Escape') {
+      onClose();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  // Use youtube-nocookie.com for enhanced privacy
+  const videoUrl = `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1`;
+
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
+      <div
+        ref={modalRef}
+        className="relative bg-white rounded-lg w-full max-w-4xl focus:outline-none"
+        tabIndex={-1}
+        onKeyDown={handleKeyDown}
+      >
+        <div className="sr-only" id="modal-title">Video Player</div>
+        <button
+          onClick={onClose}
+          className="absolute -top-10 right-0 text-white hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-white"
+          aria-label="Close video"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        <div className="aspect-video w-full">
+          <iframe
+            className="w-full h-full"
+            src={videoUrl}
+            title="YouTube video player"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          ></iframe>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Cookie Consent Component with Privacy Notice
+const CookieConsent = ({ onAccept }) => {
+  const handleAccept = () => {
+    try {
+      localStorage.setItem('cookiesAccepted', 'true');
+      onAccept();
+    } catch (error) {
+      console.warn('Unable to save cookie preference:', error);
+      // Still call onAccept to remove the banner
+      onAccept();
+    }
+  };
+
+  return (
+    <div className="fixed bottom-0 inset-x-0 pb-2 sm:pb-5 z-50">
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
+        <div className="p-2 rounded-lg bg-indigo-600 shadow-lg sm:p-3">
+          <div className="flex items-center justify-between flex-wrap">
+            <div className="w-0 flex-1 flex items-center">
+              <span className="flex p-2 rounded-lg bg-indigo-800">
+                <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </span>
+              <div className="ml-3 font-medium text-white">
+                <span className="md:hidden">We use cookies for essential features.</span>
+                <span className="hidden md:inline">This site uses cookies for essential features and embedded content. By continuing, you agree to their use.</span>
+              </div>
+            </div>
+            <div className="order-3 mt-2 flex-shrink-0 w-full sm:order-2 sm:mt-0 sm:w-auto">
+              <button
+                onClick={handleAccept}
+                className="flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-indigo-600 bg-white hover:bg-indigo-50"
+              >
+                Accept and continue
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const LandingPage = () => {
   const [hackathons, setHackathons] = useState([])
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [showCookieConsent, setShowCookieConsent] = useState(false)
+  const [cookiesAccepted, setCookiesAccepted] = useState(false)
+  const videoId = "taWOlyAU334" // Sisu video ID
   const navigate = useNavigate()
+
+  useEffect(() => {
+    try {
+      const accepted = localStorage.getItem('cookiesAccepted') === 'true';
+      setCookiesAccepted(accepted);
+      setShowCookieConsent(!accepted);
+    } catch (error) {
+      console.warn('Unable to check cookie preference:', error);
+      setShowCookieConsent(true);
+    }
+  }, []);
+
+  const handleCookieAccept = () => {
+    setCookiesAccepted(true);
+    setShowCookieConsent(false);
+  };
 
   useEffect(() => {
     const auth = getAuth()
@@ -153,9 +285,31 @@ const LandingPage = () => {
     }
   }
 
+  // Function to render video content based on cookie acceptance
+  const renderVideoContent = () => {
+    if (!cookiesAccepted) {
+      return (
+        <div className="w-full h-full bg-gray-100 rounded-lg shadow-lg flex items-center justify-center p-8">
+          <p className="text-gray-500 text-center">Please accept cookies to view the video content</p>
+        </div>
+      );
+    }
+
+    return (
+      <iframe
+        className="w-full h-full rounded-lg shadow-lg"
+        src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1`}
+        title="YouTube video player"
+        frameBorder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    );
+  };
+
   return (
     <div className="bg-gray-50">
-      {/* Hero Section */}
+      {/* Hero Section - Only show when not authenticated */}
       {!user && (
         <div className="relative overflow-hidden bg-gradient-to-br from-indigo-400 to-indigo-900">
           <div className="max-w-7xl mx-auto">
@@ -200,22 +354,20 @@ const LandingPage = () => {
                   <div className="absolute top-1/4 right-1/4 w-48 h-48 bg-white/10 rounded-full blur-2xl" />
                   <div className="absolute bottom-1/4 left-1/4 w-72 h-72 bg-white/10 rounded-full blur-2xl" />
 
-                  {/* Placeholder icon and text */}
-                  <div className="relative text-center p-8">
-                    <svg
-                      className="mx-auto h-24 w-24 text-white/80"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={1}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.96.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z"
-                      />
-                    </svg>
-                    <span className="mt-4 block text-white/60 text-sm">Hero Image Placeholder</span>
+                  {/* Lottie Animation */}
+                  <div className="relative w-full h-full max-w-lg mx-auto p-8">
+                    <Lottie
+                      animationData={innovationAnimation}
+                      loop={true}
+                      autoplay={true}
+                      rendererSettings={{
+                        preserveAspectRatio: 'xMidYMid slice'
+                      }}
+                      className="w-full h-full"
+                      onError={(err) => {
+                        console.error('Lottie Error:', err);
+                      }}
+                    />
                   </div>
 
                   {/* Gradient overlay */}
@@ -227,29 +379,67 @@ const LandingPage = () => {
         </div>
       )}
 
-      {/* Video Section */}
-      <div className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-extrabold text-gray-900">The Spirit of Sisu</h2>
-            <p className="mt-4 text-xl text-gray-500">Grit, courage, and unwavering determination</p>
-          </div>
-          <div className="mt-12 aspect-video w-full max-w-4xl mx-auto bg-gray-100 rounded-lg shadow-lg">
-            {/* Video embed placeholder - we'll need the YouTube URL */}
-            <div className="w-full h-full flex items-center justify-center text-gray-400">
-              Video Coming Soon
+      {/* Main Section - Show for authenticated users */}
+      {user ? (
+        <div className="py-16 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-4">
+                <h2 className="text-3xl font-extrabold text-gray-900 flex items-center gap-4">
+                  <span>Build Something Extraordinary</span>
+                  <span>-</span>
+                  <span>Find your Sisu</span>
+                  <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="inline-flex items-center justify-center p-1.5 rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 transition-colors"
+                    aria-label="Play video"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                </h2>
+              </div>
+              <p className="mt-4 text-xl text-gray-500">Join upcoming hackathons and showcase your innovation</p>
             </div>
           </div>
         </div>
-      </div>
+      ) : (
+        // Show original video section for non-authenticated users
+        <div className="py-16 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center">
+              <h2 className="text-3xl font-extrabold text-gray-900">The Spirit of Sisu</h2>
+              <p className="mt-4 text-xl text-gray-500">Grit, courage, and unwavering determination</p>
+              <div className="mt-12 aspect-video w-full max-w-4xl mx-auto">
+                {renderVideoContent()}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Video Modal */}
+      <VideoModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        videoId={videoId}
+      />
+
+      {/* Cookie Consent Banner */}
+      {showCookieConsent && <CookieConsent onAccept={handleCookieAccept} />}
 
       {/* Hackathon Events Section */}
-      <div className="py-12 bg-gray-50">
+      <div id="hackathons" className="py-12 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-extrabold text-gray-900">Build Something Extraordinary</h2>
-            <p className="mt-4 text-xl text-gray-500">Join upcoming hackathons and showcase your innovation</p>
-          </div>
+          {/* Remove the title since it's now in the main section */}
+          {!user && (
+            <div className="text-center">
+              <h2 className="text-3xl font-extrabold text-gray-900">Build Something Extraordinary</h2>
+              <p className="mt-4 text-xl text-gray-500">Join upcoming hackathons and showcase your innovation</p>
+            </div>
+          )}
 
           {loading ? (
             <div className="mt-12 flex justify-center">
@@ -396,70 +586,74 @@ const LandingPage = () => {
         </div>
       </div>
 
-      {/* Find Your Sisu Section */}
-      <div className="py-16 bg-gradient-to-br from-indigo-400 to-indigo-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-extrabold text-white sm:text-4xl">Find Your Sisu</h2>
-            <p className="mt-4 text-xl text-gray-100 max-w-3xl mx-auto">
-              Through our hackathons, you'll gain more than just technical know-how. You'll sharpen your skills, expand your knowledge, and create demonstrable proof of your dedication to innovation.
-            </p>
-            <div className="mt-8 flex justify-center gap-4">
-              <Link
-                to="/register"
-                className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-indigo-700 bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10"
-              >
-                Start Building
-              </Link>
-              <Link
-                to="/hackathons"
-                className="inline-flex items-center px-8 py-3 border border-white text-base font-medium rounded-md text-white hover:bg-indigo-800 md:py-4 md:text-lg md:px-10"
-              >
-                Browse Hackathons
-              </Link>
+      {/* Find Your Sisu Section - Only show when not authenticated */}
+      {!user && (
+        <div className="py-16 bg-gradient-to-br from-indigo-400 to-indigo-900">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center">
+              <h2 className="text-3xl font-extrabold text-white sm:text-4xl">Find Your Sisu</h2>
+              <p className="mt-4 text-xl text-gray-100 max-w-3xl mx-auto">
+                Through our hackathons, you'll gain more than just technical know-how. You'll sharpen your skills, expand your knowledge, and create demonstrable proof of your dedication to innovation.
+              </p>
+              <div className="mt-8 flex justify-center gap-4">
+                <Link
+                  to="/register"
+                  className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-indigo-700 bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10"
+                >
+                  Start Building
+                </Link>
+                <Link
+                  to="/hackathons"
+                  className="inline-flex items-center px-8 py-3 border border-white text-base font-medium rounded-md text-white hover:bg-indigo-800 md:py-4 md:text-lg md:px-10"
+                >
+                  Browse Hackathons
+                </Link>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Platform Features Section */}
-      <div className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-extrabold text-gray-900">Why Build with Sisu</h2>
-            <p className="mt-4 text-xl text-gray-500">Everything you need to bring your ideas to life</p>
-          </div>
-          <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="text-indigo-600 mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900">Collaborative Innovation</h3>
-              <p className="mt-2 text-gray-500">Connect with like-minded innovators and build together in a supportive environment.</p>
+      {/* Platform Features Section - Only show when not authenticated */}
+      {!user && (
+        <div className="py-16 bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center">
+              <h2 className="text-3xl font-extrabold text-gray-900">Why Build with Sisu</h2>
+              <p className="mt-4 text-xl text-gray-500">Everything you need to bring your ideas to life</p>
             </div>
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="text-indigo-600 mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
+            <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <div className="text-indigo-600 mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900">Collaborative Innovation</h3>
+                <p className="mt-2 text-gray-500">Connect with like-minded innovators and build together in a supportive environment.</p>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900">Skill Development</h3>
-              <p className="mt-2 text-gray-500">Sharpen your technical skills and learn from real-world project experiences.</p>
-            </div>
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="text-indigo-600 mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <div className="text-indigo-600 mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900">Skill Development</h3>
+                <p className="mt-2 text-gray-500">Sharpen your technical skills and learn from real-world project experiences.</p>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900">Portfolio Building</h3>
-              <p className="mt-2 text-gray-500">Create demonstrable proof of your skills and innovation through completed projects.</p>
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <div className="text-indigo-600 mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900">Portfolio Building</h3>
+                <p className="mt-2 text-gray-500">Create demonstrable proof of your skills and innovation through completed projects.</p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Footer */}
       <footer className="bg-gray-900">
@@ -472,7 +666,21 @@ const LandingPage = () => {
             <div>
               <h3 className="text-white text-lg font-semibold mb-4">Quick Links</h3>
               <ul className="space-y-2">
-                <li><Link to="/hackathons" className="text-gray-400 hover:text-white text-sm">Browse Hackathons</Link></li>
+                <li>
+                  <a
+                    href="#hackathons"
+                    className="text-gray-400 hover:text-white text-sm"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      document.getElementById('hackathons').scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                      });
+                    }}
+                  >
+                    Browse Hackathons
+                  </a>
+                </li>
                 <li><Link to="/register" className="text-gray-400 hover:text-white text-sm">Get Started</Link></li>
                 <li><Link to="/about" className="text-gray-400 hover:text-white text-sm">About Sisu</Link></li>
               </ul>

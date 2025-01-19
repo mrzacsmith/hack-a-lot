@@ -1,7 +1,7 @@
 {
   "name": "hack-a-lot",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.9",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,11 @@
     "preview": "vite preview",
     "deploy": "npm run build && firebase deploy",
     "cypress:open": "cypress open",
-    "cypress:run": "cypress run"
+    "cypress:run": "cypress run",
+    "version:major": "npm version major",
+    "version:minor": "npm version minor",
+    "version:patch": "npm version patch",
+    "version:specific": "npm version"
   },
   "dependencies": {
     "@react-icons/all-files": "^4.1.0",

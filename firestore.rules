@@ -128,6 +128,12 @@ service cloud.firestore {
 
     // Hackathons collection
     match /hackathons/{hackathon} {
+      // Helper function to check user role once at this level
+      function hasReviewAccess() {
+        let user = get(/databases/$(database)/documents/users/$(request.auth.uid));
+        return user != null && (user.data.role == 'admin' || user.data.role == 'reviewer');
+      }
+
       // Only admins can create and delete hackathons
       allow create, delete: if request.auth != null && isAdmin();
       
@@ -157,11 +163,9 @@ service cloud.firestore {
 
       // Submissions subcollection (for Reviews component)
       match /submissions/{submission} {
-        // Allow reading submissions if:
-        // 1. User is admin/reviewer
-        // 2. User is the submission owner
+        // Allow reading submissions if user has review access or is the owner
         allow read: if request.auth != null && (
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'reviewer'] ||
+          hasReviewAccess() ||
           request.auth.uid == resource.data.userId
         );
 

@@ -68,7 +68,7 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
               </Link>
             )}
             <Link to="/about" className="text-gray-700 hover:text-sisu-blue px-3 py-2 rounded-md text-base font-medium">
-              About Sisu
+              What is Sisu?
             </Link>
             {!isAuthenticated ? (
               <>
@@ -133,8 +133,21 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-sisu-blue"
                       >
-                        Logout
+                        <div className="flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                          Logout
+                        </div>
                       </button>
+                      <div className="px-4 py-2 text-xs text-gray-500 border-t">
+                        <div className="flex items-center justify-between">
+                          <span className="text-base inline-block transform rotate-45">🪲</span>
+                          <div className="italic">
+                            Version {import.meta.env.VITE_APP_VERSION || '1.0.09'}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -200,7 +213,7 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
               to="/about"
               className="block px-3 py-2 text-gray-700 hover:text-sisu-blue hover:bg-blue-50 text-base font-medium"
             >
-              About Sisu
+              What is Sisu?
             </Link>
             {!isAuthenticated ? (
               <>

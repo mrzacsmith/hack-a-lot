@@ -20,6 +20,7 @@ import HackathonRegistration from './pages/HackathonRegistration'
 import HackathonDetails from './pages/HackathonDetails'
 import AboutSisu from './pages/AboutSisu'
 import PublicProfile from './pages/PublicProfile'
+import Logs from './components/Dashboard/Logs'
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -62,6 +63,7 @@ function App() {
           <Route path="reviews" element={<Reviews />} />
           <Route path="users" element={<Users />} />
           <Route path="hackathons" element={<Hackathons />} />
+          <Route path="logs" element={<Logs />} />
         </Route>
         <Route
           path="/settings"

@@ -51,8 +51,8 @@ const Reviews = () => {
         const now = new Date()
         const hackathonsList = hackathonsSnapshot.docs.map(doc => {
           const data = doc.data()
-          const startDate = data.startDate.toDate()
-          const endDate = data.endDate.toDate()
+          const startDate = data.startDate?.toDate ? data.startDate.toDate() : new Date(data.startDate)
+          const endDate = data.endDate?.toDate ? data.endDate.toDate() : new Date(data.endDate)
           const status = now < startDate
             ? 'Submitted'
             : now > endDate

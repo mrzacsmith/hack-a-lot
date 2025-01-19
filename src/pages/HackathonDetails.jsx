@@ -28,12 +28,17 @@ function HackathonDetails() {
         if (docSnap.exists()) {
           const data = docSnap.data()
           console.log('Hackathon data:', data)
+          // Handle both Timestamp and string formats
+          const startDateTime = data.startDate?.toDate ? data.startDate.toDate() : new Date(data.startDate)
+          const endDateTime = data.endDate?.toDate ? data.endDate.toDate() : new Date(data.endDate)
+          const registrationDateTime = data.registrationDeadline?.toDate ? data.registrationDeadline.toDate() : new Date(data.registrationDeadline)
+
           setHackathon({
             id: docSnap.id,
             ...data,
-            startDate: data.startDate?.toDate(),
-            endDate: data.endDate?.toDate(),
-            registrationDeadline: data.registrationDeadline?.toDate()
+            startDate: startDateTime || new Date(),
+            endDate: endDateTime || new Date(),
+            registrationDeadline: registrationDateTime || new Date()
           })
         } else {
           setError('Hackathon not found')

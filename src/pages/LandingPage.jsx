@@ -171,7 +171,7 @@ const LandingPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [showCookieConsent, setShowCookieConsent] = useState(false)
   const [cookiesAccepted, setCookiesAccepted] = useState(false)
-  const videoId = "taWOlyAU334" // Sisu video ID
+  const videoId = "eahtbd72rx4" // Updated Sisu video ID
   const navigate = useNavigate()
 
   useEffect(() => {

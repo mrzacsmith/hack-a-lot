@@ -13,28 +13,95 @@ const Hackathons = () => {
   const [imagePreview, setImagePreview] = useState(null)
   const fileInputRef = useRef(null)
   const [editingHackathon, setEditingHackathon] = useState(null)
+  const [validationErrors, setValidationErrors] = useState({
+    registrationDeadline: '',
+    startDate: '',
+    endDate: ''
+  })
   const [newHackathon, setNewHackathon] = useState({
     title: '',
     description: '',
+    registrationDeadline: '',
     startDate: '',
     startTime: '09:00',
     endDate: '',
     endTime: '17:00',
-    registrationDeadline: '',
     maxParticipants: '',
+    reward: '',
+    requireGithub: false,
+    requireVideo: false,
+    requireDeployed: false,
+    termsUrl: '',
     status: 'upcoming',
     imageUrl: '',
     type: 'regular',
-    duration: 60 // Default duration in minutes
+    duration: 60
   })
 
-  const formatDate = (dateStr) => {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString('en-US', {
+  const validateDates = (dates, type = 'create') => {
+    const errors = {
+      registrationDeadline: '',
+      startDate: '',
+      endDate: ''
+    }
+
+    const hackathonData = type === 'create' ? newHackathon : editingHackathon
+    const { registrationDeadline, startDate, startTime, endDate, endTime } = hackathonData
+
+    if (registrationDeadline && startDate) {
+      const regDate = new Date(registrationDeadline)
+      const startDate = new Date(hackathonData.startDate)
+
+      regDate.setHours(0, 0, 0, 0)
+      startDate.setHours(0, 0, 0, 0)
+
+      if (startDate < regDate) {
+        errors.startDate = 'Start date must be on or after the registration deadline'
+      }
+    }
+
+    if (startDate && endDate) {
+      const startDateTime = new Date(`${startDate}T${startTime}`)
+      const endDateTime = new Date(`${endDate}T${endTime}`)
+
+      if (endDateTime <= startDateTime) {
+        errors.endDate = 'End date must be after the start date'
+      }
+    }
+
+    setValidationErrors(errors)
+    return Object.values(errors).every(error => !error)
+  }
+
+  const handleDateChange = (field, value, type = 'create') => {
+    const updatedHackathon = type === 'create'
+      ? { ...newHackathon, [field]: value }
+      : { ...editingHackathon, [field]: value }
+
+    if (field === 'registrationDeadline' && value) {
+      updatedHackathon.startDate = value
+    }
+
+    if (type === 'create') {
+      setNewHackathon(updatedHackathon)
+    } else {
+      setEditingHackathon(updatedHackathon)
+    }
+
+    validateDates(updatedHackathon, type)
+  }
+
+  const formatDate = (dateInput) => {
+    const date = dateInput instanceof Date ? dateInput : new Date(dateInput)
+    return date.toLocaleString('en-US', {
       weekday: 'short',
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZoneName: 'short'
     })
   }
 
@@ -50,11 +117,13 @@ const Hackathons = () => {
         return {
           id: doc.id,
           ...data,
-          startDate: startDateTime?.toISOString().split('T')[0] || '',
+          // Store the full date objects instead of splitting them
+          startDate: startDateTime || new Date(),
+          endDate: endDateTime || new Date(),
+          registrationDeadline: registrationDateTime || new Date(),
+          // Keep these for the form inputs
           startTime: startDateTime ? `${startDateTime.getHours().toString().padStart(2, '0')}:${startDateTime.getMinutes().toString().padStart(2, '0')}` : '09:00',
-          endDate: endDateTime?.toISOString().split('T')[0] || '',
           endTime: endDateTime ? `${endDateTime.getHours().toString().padStart(2, '0')}:${endDateTime.getMinutes().toString().padStart(2, '0')}` : '17:00',
-          registrationDeadline: registrationDateTime?.toISOString().split('T')[0] || ''
         }
       })
       setHackathons(hackathonsList)
@@ -124,8 +193,23 @@ const Hackathons = () => {
       const endDateTime = new Date(newHackathon.endDate)
       endDateTime.setHours(endHours, endMinutes, 0)
 
-      const registrationDateTime = new Date(newHackathon.registrationDeadline)
-      registrationDateTime.setHours(23, 59, 59) // Set registration deadline to end of day
+      // Compare only the dates for registration deadline
+      const regDate = new Date(newHackathon.registrationDeadline)
+      const startDate = new Date(newHackathon.startDate)
+
+      // Reset times to midnight for pure date comparison
+      regDate.setHours(0, 0, 0, 0)
+      startDate.setHours(0, 0, 0, 0)
+
+      if (startDate < regDate) {
+        toast.error('Start date must be on or after the registration deadline')
+        return
+      }
+
+      if (endDateTime <= startDateTime) {
+        toast.error('End date must be after the start date')
+        return
+      }
 
       // Determine initial status based on dates
       const now = new Date()
@@ -135,7 +219,7 @@ const Hackathons = () => {
         ...newHackathon,
         startDate: Timestamp.fromDate(startDateTime),
         endDate: Timestamp.fromDate(endDateTime),
-        registrationDeadline: Timestamp.fromDate(registrationDateTime),
+        registrationDeadline: Timestamp.fromDate(regDate),
         maxParticipants: parseInt(newHackathon.maxParticipants),
         createdAt: Timestamp.now(),
         participants: [],
@@ -227,8 +311,23 @@ const Hackathons = () => {
       const endDateTime = new Date(editingHackathon.endDate)
       endDateTime.setHours(endHours, endMinutes, 0)
 
-      const registrationDateTime = new Date(editingHackathon.registrationDeadline)
-      registrationDateTime.setHours(23, 59, 59) // Set registration deadline to end of day
+      // Compare only the dates for registration deadline
+      const regDate = new Date(editingHackathon.registrationDeadline)
+      const startDate = new Date(editingHackathon.startDate)
+
+      // Reset times to midnight for pure date comparison
+      regDate.setHours(0, 0, 0, 0)
+      startDate.setHours(0, 0, 0, 0)
+
+      if (startDate < regDate) {
+        toast.error('Start date must be on or after the registration deadline')
+        return
+      }
+
+      if (endDateTime <= startDateTime) {
+        toast.error('End date must be after the start date')
+        return
+      }
 
       // Determine status based on dates if not manually set
       const now = new Date()
@@ -241,7 +340,7 @@ const Hackathons = () => {
         ...editingHackathon,
         startDate: Timestamp.fromDate(startDateTime),
         endDate: Timestamp.fromDate(endDateTime),
-        registrationDeadline: Timestamp.fromDate(registrationDateTime),
+        registrationDeadline: Timestamp.fromDate(regDate),
         maxParticipants: parseInt(editingHackathon.maxParticipants),
         imageUrl,
         status // Set the computed status
@@ -357,7 +456,7 @@ const Hackathons = () => {
                 value={newHackathon.description}
                 onChange={(e) => setNewHackathon({ ...newHackathon, description: e.target.value })}
                 rows={3}
-                className="mt-1 block w-full"
+                className="mt-1 block w-full rounded-md border-gray-300"
               />
             </div>
 
@@ -383,7 +482,7 @@ const Hackathons = () => {
                       return updated;
                     });
                   }}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  className="mt-1 block w-full rounded-md border-gray-300"
                 >
                   <option value="regular">Regular</option>
                   <option value="lightning">Lightning Round</option>
@@ -425,6 +524,20 @@ const Hackathons = () => {
               )}
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Registration Deadline</label>
+              <input
+                type="date"
+                required
+                value={newHackathon.registrationDeadline}
+                onChange={(e) => handleDateChange('registrationDeadline', e.target.value)}
+                className={`mt-1 block w-full rounded-md ${validationErrors.registrationDeadline ? 'border-red-500' : 'border-gray-300'}`}
+              />
+              {validationErrors.registrationDeadline && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.registrationDeadline}</p>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Start Date</label>
@@ -434,19 +547,23 @@ const Hackathons = () => {
                   value={newHackathon.startDate}
                   onChange={(e) => {
                     const newStartDate = e.target.value;
-                    setNewHackathon(prev => {
-                      const updated = { ...prev, startDate: newStartDate };
-                      if (updated.type === 'lightning' && newStartDate && updated.startTime) {
-                        const startDateTime = new Date(`${newStartDate}T${updated.startTime}`);
-                        const endDateTime = new Date(startDateTime.getTime() + (updated.duration * 60 * 1000));
-                        updated.endDate = endDateTime.toISOString().split('T')[0];
-                        updated.endTime = endDateTime.toTimeString().slice(0, 5);
-                      }
-                      return updated;
-                    });
+                    handleDateChange('startDate', newStartDate);
+                    if (newHackathon.type === 'lightning' && newStartDate && newHackathon.startTime) {
+                      const startDateTime = new Date(`${newStartDate}T${newHackathon.startTime}`);
+                      const endDateTime = new Date(startDateTime.getTime() + (newHackathon.duration * 60 * 1000));
+                      setNewHackathon(prev => ({
+                        ...prev,
+                        startDate: newStartDate,
+                        endDate: endDateTime.toISOString().split('T')[0],
+                        endTime: endDateTime.toTimeString().slice(0, 5)
+                      }));
+                    }
                   }}
-                  className="mt-1 block w-full"
+                  className={`mt-1 block w-full rounded-md ${validationErrors.startDate ? 'border-red-500' : 'border-gray-300'}`}
                 />
+                {validationErrors.startDate && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.startDate}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Start Time</label>
@@ -454,32 +571,26 @@ const Hackathons = () => {
                   type="time"
                   required
                   value={newHackathon.startTime}
-                  onChange={(e) => {
-                    const newStartTime = e.target.value;
-                    setNewHackathon(prev => {
-                      const updated = { ...prev, startTime: newStartTime };
-                      if (updated.type === 'lightning' && updated.startDate) {
-                        const startDateTime = new Date(`${updated.startDate}T${newStartTime}`);
-                        const endDateTime = new Date(startDateTime.getTime() + (updated.duration * 60 * 1000));
-                        updated.endDate = endDateTime.toISOString().split('T')[0];
-                        updated.endTime = endDateTime.toTimeString().slice(0, 5);
-                      }
-                      return updated;
-                    });
-                  }}
-                  className="mt-1 block w-full"
+                  onChange={(e) => handleDateChange('startTime', e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300"
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">End Date</label>
                 <input
                   type="date"
                   required
                   value={newHackathon.endDate}
-                  onChange={(e) => setNewHackathon({ ...newHackathon, endDate: e.target.value })}
-                  className="mt-1 block w-full"
+                  onChange={(e) => handleDateChange('endDate', e.target.value)}
+                  className={`mt-1 block w-full rounded-md ${validationErrors.endDate ? 'border-red-500' : 'border-gray-300'}`}
                   disabled={newHackathon.type === 'lightning'}
                 />
+                {validationErrors.endDate && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.endDate}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">End Time</label>
@@ -487,33 +598,89 @@ const Hackathons = () => {
                   type="time"
                   required
                   value={newHackathon.endTime}
-                  onChange={(e) => setNewHackathon({ ...newHackathon, endTime: e.target.value })}
-                  className="mt-1 block w-full"
+                  onChange={(e) => handleDateChange('endTime', e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300"
                   disabled={newHackathon.type === 'lightning'}
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Registration Deadline</label>
-              <input
-                type="date"
-                required
-                value={newHackathon.registrationDeadline}
-                onChange={(e) => setNewHackathon({ ...newHackathon, registrationDeadline: e.target.value })}
-                className="mt-1 block w-full"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+              <div className="flex items-end gap-4">
+                <div className="w-32">
+                  <label className="block text-sm font-medium text-gray-700">Max Participants</label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={newHackathon.maxParticipants}
+                    onChange={(e) => setNewHackathon({ ...newHackathon, maxParticipants: e.target.value })}
+                    className="mt-1 block w-full rounded-md border-gray-300"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700">Reward</label>
+                  <input
+                    type="text"
+                    value={newHackathon.reward}
+                    onChange={(e) => setNewHackathon({ ...newHackathon, reward: e.target.value })}
+                    placeholder="e.g., $1000, Gift Cards, etc."
+                    className="mt-1 block w-full rounded-md border-gray-300"
+                  />
+                </div>
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Max Participants</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Submission Requirements</label>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="requireGithub"
+                    checked={newHackathon.requireGithub}
+                    onChange={(e) => setNewHackathon({ ...newHackathon, requireGithub: e.target.checked })}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="requireGithub" className="ml-2 block text-sm text-gray-700">
+                    GitHub Repository
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="requireVideo"
+                    checked={newHackathon.requireVideo}
+                    onChange={(e) => setNewHackathon({ ...newHackathon, requireVideo: e.target.checked })}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="requireVideo" className="ml-2 block text-sm text-gray-700">
+                    Video Demo
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="requireDeployed"
+                    checked={newHackathon.requireDeployed}
+                    onChange={(e) => setNewHackathon({ ...newHackathon, requireDeployed: e.target.checked })}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="requireDeployed" className="ml-2 block text-sm text-gray-700">
+                    Deployed Project
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid">
+              <label className="block text-sm font-medium text-gray-700">Terms & Conditions URL</label>
               <input
-                type="number"
-                required
-                min="1"
-                value={newHackathon.maxParticipants}
-                onChange={(e) => setNewHackathon({ ...newHackathon, maxParticipants: e.target.value })}
-                className="mt-1 block w-full"
+                type="url"
+                value={newHackathon.termsUrl}
+                onChange={(e) => setNewHackathon({ ...newHackathon, termsUrl: e.target.value })}
+                placeholder="https://..."
+                className="mt-2 block w-full rounded-sm border border-gray-300 border-solid"
               />
             </div>
 
@@ -536,156 +703,154 @@ const Hackathons = () => {
         </div>
       )}
 
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <ul className="divide-y divide-gray-200">
-          {hackathons.map((hackathon) => (
-            <li
-              key={hackathon.id}
-              className={`px-6 py-4 relative ${hackathon.type === 'lightning'
-                ? 'bg-gradient-to-r from-purple-50 to-indigo-50 border-l-4 border-indigo-500'
-                : hackathon.status === 'upcoming'
-                  ? 'bg-yellow-50'
-                  : hackathon.status === 'active'
-                    ? 'bg-green-50'
-                    : hackathon.status === 'completed'
-                      ? 'bg-gray-50'
-                      : hackathon.status === 'cancelled'
-                        ? 'bg-red-50'
-                        : 'bg-white'
-                } hover:bg-opacity-80 transition-colors duration-200`}
-            >
-              {hackathon.type === 'lightning' && (
-                <div className="absolute top-4 right-4 flex items-center space-x-1 px-2 py-1 bg-indigo-100 rounded-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {hackathons.map((hackathon) => (
+          <div
+            key={hackathon.id}
+            className={`relative rounded-lg shadow-md overflow-hidden ${hackathon.type === 'lightning'
+              ? 'bg-gradient-to-b from-purple-50 to-indigo-50 border-t-4 border-indigo-500'
+              : hackathon.status === 'upcoming'
+                ? 'bg-yellow-50'
+                : hackathon.status === 'active'
+                  ? 'bg-green-50'
+                  : hackathon.status === 'completed'
+                    ? 'bg-gray-50'
+                    : hackathon.status === 'cancelled'
+                      ? 'bg-red-50'
+                      : 'bg-white'
+              } hover:shadow-lg transition-shadow duration-200`}
+          >
+            {/* Image Section */}
+            <div className="aspect-video w-full overflow-hidden">
+              {hackathon.imageUrl ? (
+                <img
+                  src={hackathon.imageUrl}
+                  alt={hackathon.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
                   <svg
-                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-12 w-12 text-gray-400"
+                    fill="none"
                     viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className="w-4 h-4 text-indigo-600"
+                    stroke="currentColor"
                   >
                     <path
-                      fillRule="evenodd"
-                      d="M14.615 1.595a.75.75 0 01.359.852L12.982 9.75h7.268a.75.75 0 01.548 1.262l-10.5 11.25a.75.75 0 01-1.272-.71l1.992-7.302H3.75a.75.75 0 01-.548-1.262l10.5-11.25a.75.75 0 01.913-.143z"
-                      clipRule="evenodd"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                     />
                   </svg>
-                  <span className="text-xs font-semibold text-indigo-700">Lightning Round</span>
                 </div>
               )}
-              <div className="flex items-center justify-between">
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 h-24 w-24">
-                    {hackathon.imageUrl ? (
-                      <img
-                        src={hackathon.imageUrl}
-                        alt={hackathon.title}
-                        className="h-24 w-24 object-cover rounded-lg shadow-sm"
-                      />
-                    ) : (
-                      <div className="h-24 w-24 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <svg
-                          className="h-12 w-12 text-gray-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <h3 className="text-lg font-medium text-gray-900">{hackathon.title}</h3>
-                      {hackathon.type === 'lightning' && (
-                        <div className="flex items-center space-x-1 text-indigo-600">
-                          <span className="text-sm font-semibold">
-                            {hackathon.duration} min
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${hackathon.status === 'upcoming'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : hackathon.status === 'active'
-                          ? 'bg-green-100 text-green-800'
-                          : hackathon.status === 'completed'
-                            ? 'bg-gray-100 text-gray-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                        {hackathon.status.charAt(0).toUpperCase() + hackathon.status.slice(1)}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm text-gray-500">{hackathon.description}</p>
-                    <div className="mt-2 text-sm text-gray-500">
-                      <div className="flex items-center space-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <p>Start: {formatDate(hackathon.startDate)} at {hackathon.startTime}</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <p>End: {formatDate(hackathon.endDate)} at {hackathon.endTime}</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                        <p>Registration Deadline: {formatDate(hackathon.registrationDeadline)}</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                        <p>Max Participants: {hackathon.maxParticipants}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end space-y-4">
-                  <div className="flex items-center space-x-4">
-                    <select
-                      value={hackathon.status}
-                      onChange={(e) => handleUpdateStatus(hackathon.id, e.target.value)}
-                      className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    >
-                      <option value="upcoming">Upcoming</option>
-                      <option value="active">Active</option>
-                      <option value="completed">Completed</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                    <button
-                      onClick={() => handleEditClick(hackathon)}
-                      className="text-indigo-600 hover:text-indigo-900 p-2 rounded-full hover:bg-gray-100"
-                      title="Edit Hackathon"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => handleDeleteHackathon(hackathon.id)}
-                      className="text-red-600 hover:text-red-900 p-2 rounded-full hover:bg-gray-100"
-                      title="Delete Hackathon"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
+            </div>
+
+            {/* Lightning Round Badge */}
+            {hackathon.type === 'lightning' && (
+              <div className="absolute top-4 right-4 flex items-center space-x-1 px-2 py-1 bg-indigo-100 rounded-full">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  className="w-4 h-4 text-indigo-600"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M14.615 1.595a.75.75 0 01.359.852L12.982 9.75h7.268a.75.75 0 01.548 1.262l-10.5 11.25a.75.75 0 01-1.272-.71l1.992-7.302H3.75a.75.75 0 01-.548-1.262l10.5-11.25a.75.75 0 01.913-.143z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span className="text-xs font-semibold text-indigo-700">
+                  {hackathon.duration} min
+                </span>
+              </div>
+            )}
+
+            {/* Content Section */}
+            <div className="p-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">{hackathon.title}</h3>
+                  <span className={`mt-2 inline-block px-2 py-1 text-xs font-semibold rounded-full ${hackathon.status === 'upcoming'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : hackathon.status === 'active'
+                      ? 'bg-green-100 text-green-800'
+                      : hackathon.status === 'completed'
+                        ? 'bg-gray-100 text-gray-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                    {hackathon.status.charAt(0).toUpperCase() + hackathon.status.slice(1)}
+                  </span>
                 </div>
               </div>
-            </li>
-          ))}
-        </ul>
+
+              <p className="mt-4 text-sm text-gray-600">{hackathon.description}</p>
+
+              <div className="mt-4 space-y-2 text-sm text-gray-500">
+                <div className="flex items-center space-x-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p>Start: {formatDate(hackathon.startDate)}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p>End: {formatDate(hackathon.endDate)}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  <p>Register by: {formatDate(hackathon.registrationDeadline)}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                  <p>Max Participants: {hackathon.maxParticipants}</p>
+                </div>
+              </div>
+
+              {/* Actions Section */}
+              <div className="mt-6 flex items-center justify-between">
+                <select
+                  value={hackathon.status}
+                  onChange={(e) => handleUpdateStatus(hackathon.id, e.target.value)}
+                  className="text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                >
+                  <option value="upcoming">Upcoming</option>
+                  <option value="active">Active</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleEditClick(hackathon)}
+                    className="text-indigo-600 hover:text-indigo-900 p-2 rounded-full hover:bg-gray-100"
+                    title="Edit Hackathon"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleDeleteHackathon(hackathon.id)}
+                    className="text-red-600 hover:text-red-900 p-2 rounded-full hover:bg-gray-100"
+                    title="Delete Hackathon"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {isEditing && editingHackathon && (
@@ -793,70 +958,148 @@ const Hackathons = () => {
                 />
               </div>
 
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Registration Deadline</label>
+                  <input
+                    type="date"
+                    required
+                    value={editingHackathon.registrationDeadline}
+                    onChange={(e) => handleDateChange('registrationDeadline', e.target.value, 'edit')}
+                    className={`mt-1 block w-full rounded-md ${validationErrors.registrationDeadline ? 'border-red-500' : 'border-gray-300'}`}
+                  />
+                  {validationErrors.registrationDeadline && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.registrationDeadline}</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Start Date</label>
+                    <input
+                      type="date"
+                      required
+                      value={editingHackathon.startDate}
+                      onChange={(e) => handleDateChange('startDate', e.target.value, 'edit')}
+                      className={`mt-1 block w-full rounded-md ${validationErrors.startDate ? 'border-red-500' : 'border-gray-300'}`}
+                    />
+                    {validationErrors.startDate && (
+                      <p className="mt-1 text-sm text-red-600">{validationErrors.startDate}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Start Time</label>
+                    <input
+                      type="time"
+                      required
+                      value={editingHackathon.startTime}
+                      onChange={(e) => handleDateChange('startTime', e.target.value, 'edit')}
+                      className="mt-1 block w-full rounded-md border-gray-300"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">End Date</label>
+                    <input
+                      type="date"
+                      required
+                      value={editingHackathon.endDate}
+                      onChange={(e) => handleDateChange('endDate', e.target.value, 'edit')}
+                      className={`mt-1 block w-full rounded-md ${validationErrors.endDate ? 'border-red-500' : 'border-gray-300'}`}
+                    />
+                    {validationErrors.endDate && (
+                      <p className="mt-1 text-sm text-red-600">{validationErrors.endDate}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">End Time</label>
+                    <input
+                      type="time"
+                      required
+                      value={editingHackathon.endTime}
+                      onChange={(e) => handleDateChange('endTime', e.target.value, 'edit')}
+                      className="mt-1 block w-full rounded-md border-gray-300"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Start Date</label>
+                <div className="md:col-span-1">
+                  <label className="block text-sm font-medium text-gray-700">Max Participants</label>
                   <input
-                    type="date"
+                    type="number"
                     required
-                    value={editingHackathon.startDate}
-                    onChange={(e) => setEditingHackathon({ ...editingHackathon, startDate: e.target.value })}
-                    className="mt-1 block w-full"
+                    min="1"
+                    value={editingHackathon.maxParticipants}
+                    onChange={(e) => setEditingHackathon({ ...editingHackathon, maxParticipants: e.target.value })}
+                    className="mt-1 block w-full rounded-md border-gray-300"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Start Time</label>
+                  <label className="block text-sm font-medium text-gray-700">Reward</label>
                   <input
-                    type="time"
-                    required
-                    value={editingHackathon.startTime}
-                    onChange={(e) => setEditingHackathon({ ...editingHackathon, startTime: e.target.value })}
-                    className="mt-1 block w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">End Date</label>
-                  <input
-                    type="date"
-                    required
-                    value={editingHackathon.endDate}
-                    onChange={(e) => setEditingHackathon({ ...editingHackathon, endDate: e.target.value })}
-                    className="mt-1 block w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">End Time</label>
-                  <input
-                    type="time"
-                    required
-                    value={editingHackathon.endTime}
-                    onChange={(e) => setEditingHackathon({ ...editingHackathon, endTime: e.target.value })}
-                    className="mt-1 block w-full"
+                    type="text"
+                    value={editingHackathon.reward}
+                    onChange={(e) => setEditingHackathon({ ...editingHackathon, reward: e.target.value })}
+                    placeholder="e.g., $1000, Gift Cards, etc."
+                    className="mt-1 block w-full rounded-md border-gray-300"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Registration Deadline</label>
-                <input
-                  type="date"
-                  required
-                  value={editingHackathon.registrationDeadline}
-                  onChange={(e) => setEditingHackathon({ ...editingHackathon, registrationDeadline: e.target.value })}
-                  className="mt-1 block w-full"
-                />
-              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Submission Requirements</label>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="editRequireGithub"
+                        checked={editingHackathon.requireGithub}
+                        onChange={(e) => setEditingHackathon({ ...editingHackathon, requireGithub: e.target.checked })}
+                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="editRequireGithub" className="ml-2 block text-sm text-gray-700">
+                        GitHub Repository
+                      </label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="editRequireVideo"
+                        checked={editingHackathon.requireVideo}
+                        onChange={(e) => setEditingHackathon({ ...editingHackathon, requireVideo: e.target.checked })}
+                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="editRequireVideo" className="ml-2 block text-sm text-gray-700">
+                        Video Demo
+                      </label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="editRequireDeployed"
+                        checked={editingHackathon.requireDeployed}
+                        onChange={(e) => setEditingHackathon({ ...editingHackathon, requireDeployed: e.target.checked })}
+                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      />
+                      <label htmlFor="editRequireDeployed" className="ml-2 block text-sm text-gray-700">
+                        Deployed Project
+                      </label>
+                    </div>
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Max Participants</label>
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  value={editingHackathon.maxParticipants}
-                  onChange={(e) => setEditingHackathon({ ...editingHackathon, maxParticipants: e.target.value })}
-                  className="mt-1 block w-full"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Terms & Conditions URL</label>
+                  <input
+                    type="url"
+                    value={editingHackathon.termsUrl}
+                    onChange={(e) => setEditingHackathon({ ...editingHackathon, termsUrl: e.target.value })}
+                    placeholder="https://..."
+                    className="mt-1 block w-full rounded-md border-gray-900"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end space-x-3">

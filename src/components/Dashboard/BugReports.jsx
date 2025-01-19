@@ -16,7 +16,6 @@ const BugReports = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const reportsList = snapshot.docs.map(doc => {
         const data = doc.data()
-        console.log('Report data:', data) // Debug log
         return {
           id: doc.id,
           ...data,

@@ -145,12 +145,10 @@ const BugReportModal = ({ isOpen, onClose }) => {
       let screenshotUrl = null
       if (screenshot) {
         try {
-          console.log('Uploading screenshot...')
           const timestamp = Timestamp.now().toMillis()
           const screenshotRef = ref(storage, `bug-reports/${timestamp}_${userId}.png`)
           await uploadString(screenshotRef, screenshot, 'data_url')
           screenshotUrl = await getDownloadURL(screenshotRef)
-          console.log('Screenshot uploaded, URL:', screenshotUrl)
         } catch (error) {
           console.error('Error uploading screenshot:', error)
           setError('Failed to upload screenshot. Please try again.')
@@ -163,12 +161,10 @@ const BugReportModal = ({ isOpen, onClose }) => {
       let additionalImageUrl = null
       if (additionalImage) {
         try {
-          console.log('Uploading additional image...')
           const timestamp = Timestamp.now().toMillis()
           const imageRef = ref(storage, `bug-reports/${timestamp}_additional_${userId}.png`)
           await uploadString(imageRef, additionalImage, 'data_url')
           additionalImageUrl = await getDownloadURL(imageRef)
-          console.log('Additional image uploaded, URL:', additionalImageUrl)
         } catch (error) {
           console.error('Error uploading additional image:', error)
           setError('Failed to upload additional image. Please try again.')
@@ -195,7 +191,7 @@ const BugReportModal = ({ isOpen, onClose }) => {
         timestamp: Timestamp.now(),
         path: location.pathname,
         component: location.pathname.split('/').pop() || 'root',
-        version: import.meta.env.VITE_APP_VERSION || '1.0.0',
+        version: import.meta.env.VITE_APP_VERSION || '1.0.12',
         browserInfo: getBrowserInfo(),
         status: 'new',
         resolved: false,
@@ -216,9 +212,7 @@ const BugReportModal = ({ isOpen, onClose }) => {
         bugReport.ipAddress = 'Could not determine'
       }
 
-      console.log('Attempting to submit bug report:', bugReport)
       const docRef = await addDoc(collection(db, 'bugReports'), bugReport)
-      console.log('Bug report submitted successfully with ID:', docRef.id)
 
       onClose()
       setDescription('')
@@ -438,7 +432,7 @@ const BugReportModal = ({ isOpen, onClose }) => {
                     <dt>Window Size:</dt>
                     <dd>{getBrowserInfo().windowSize}</dd>
                     <dt>Version:</dt>
-                    <dd>{import.meta.env.VITE_APP_VERSION || '1.0.0'}</dd>
+                    <dd>{import.meta.env.VITE_APP_VERSION || '1.0.12'}</dd>
                     <dt>Path:</dt>
                     <dd>{location.pathname}</dd>
                   </dl>

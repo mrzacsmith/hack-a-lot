@@ -21,6 +21,7 @@ const Submissions = () => {
   const auth = getAuth()
   const location = useLocation()
   const [unviewedSubmissions, setUnviewedSubmissions] = useState([])
+  const [termsAgreed, setTermsAgreed] = useState(false)
 
   useEffect(() => {
     if (!auth.currentUser) {
@@ -548,6 +549,23 @@ const Submissions = () => {
                             <p className="mt-1 text-sm text-gray-500">Link to your deployed application</p>
                           </div>
 
+                          {/* Terms Agreement Checkbox */}
+                          <div className="mt-4">
+                            <div className="flex items-center">
+                              <input
+                                type="checkbox"
+                                id="termsAgreement"
+                                checked={termsAgreed}
+                                onChange={(e) => setTermsAgreed(e.target.checked)}
+                                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                                required
+                              />
+                              <label htmlFor="termsAgreement" className="ml-2 block text-sm text-gray-700">
+                                I agree to the terms and conditions of this event
+                              </label>
+                            </div>
+                          </div>
+
                           {/* Error Message */}
                           {error && (
                             <div className="text-red-600 text-sm mt-2">
@@ -562,11 +580,11 @@ const Submissions = () => {
                               disabled={isSubmitting || !registeredHackathons.some(h => {
                                 const now = new Date()
                                 return now >= h.startDate && now <= h.endDate
-                              })}
+                              }) || !termsAgreed}
                               className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm ${(isSubmitting || !registeredHackathons.some(h => {
                                 const now = new Date()
                                 return now >= h.startDate && now <= h.endDate
-                              }))
+                              }) || !termsAgreed)
                                 ? 'opacity-50 cursor-not-allowed'
                                 : ''
                                 }`}
@@ -582,6 +600,7 @@ const Submissions = () => {
                                 setVideoUrl('')
                                 setDeployedUrl('')
                                 setSelectedHackathon('')
+                                setTermsAgreed(false)
                               }}
                               className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
                             >

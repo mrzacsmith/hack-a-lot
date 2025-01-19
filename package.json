@@ -14,7 +14,9 @@
     "version:major": "npm version major",
     "version:minor": "npm version minor",
     "version:patch": "npm version patch",
-    "version:specific": "npm version"
+    "version:specific": "npm version",
+    "kill-dev": "pkill -f 'vite' || true",
+    "all": "git add . && git commit -m \"$npm_config_message\" && npm run version:patch && git push && npm run build && firebase deploy --only hosting && npm run kill-dev && npm run dev"
   },
   "dependencies": {
     "@react-icons/all-files": "^4.1.0",

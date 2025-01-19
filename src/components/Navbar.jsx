@@ -165,7 +165,7 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
                             </div>
                           </div>
                           <div className="italic">
-                            Version {import.meta.env.VITE_APP_VERSION || '1.0.10'}
+                            Version {import.meta.env.VITE_APP_VERSION || '1.0.12'}
                           </div>
                         </div>
                       </div>

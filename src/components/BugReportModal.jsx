@@ -28,7 +28,8 @@ const BugReportModal = ({ isOpen, onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [screenshot, setScreenshot] = useState(null)
-  const [attachedFiles, setAttachedFiles] = useState([])
+  const [additionalImage, setAdditionalImage] = useState(null)
+  const [isDragging, setIsDragging] = useState(false)
   const [showSystemInfo, setShowSystemInfo] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const location = useLocation()
@@ -58,20 +59,51 @@ const BugReportModal = ({ isOpen, onClose }) => {
     capture()
   }, [isOpen])
 
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files)
-    const validFiles = files.filter(file => {
-      const isValid = file.size <= 5 * 1024 * 1024 // 5MB limit
-      if (!isValid) {
-        setError('Files must be less than 5MB')
-      }
-      return isValid
-    })
-    setAttachedFiles(prev => [...prev, ...validFiles])
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    setIsDragging(true)
   }
 
-  const removeFile = (index) => {
-    setAttachedFiles(prev => prev.filter((_, i) => i !== index))
+  const handleDragLeave = (e) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files[0]
+    handleImageUpload(file)
+  }
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0]
+    handleImageUpload(file)
+  }
+
+  const handleImageUpload = (file) => {
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please upload an image file')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      setError('Image must be less than 5MB')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      setAdditionalImage(e.target.result)
+      setError('')
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const removeAdditionalImage = () => {
+    setAdditionalImage(null)
   }
 
   const getBrowserInfo = () => {
@@ -127,6 +159,24 @@ const BugReportModal = ({ isOpen, onClose }) => {
         }
       }
 
+      // Upload additional image if it exists
+      let additionalImageUrl = null
+      if (additionalImage) {
+        try {
+          console.log('Uploading additional image...')
+          const timestamp = Timestamp.now().toMillis()
+          const imageRef = ref(storage, `bug-reports/${timestamp}_additional_${userId}.png`)
+          await uploadString(imageRef, additionalImage, 'data_url')
+          additionalImageUrl = await getDownloadURL(imageRef)
+          console.log('Additional image uploaded, URL:', additionalImageUrl)
+        } catch (error) {
+          console.error('Error uploading additional image:', error)
+          setError('Failed to upload additional image. Please try again.')
+          setIsSubmitting(false)
+          return
+        }
+      }
+
       const bugReport = {
         // User Information
         userId,
@@ -150,6 +200,7 @@ const BugReportModal = ({ isOpen, onClose }) => {
         status: 'new',
         resolved: false,
         screenshotUrl,
+        additionalImageUrl,
         attachments: [], // Will be populated with storage URLs after upload
       }
 
@@ -174,7 +225,7 @@ const BugReportModal = ({ isOpen, onClose }) => {
       setSeverity('medium')
       setCategory('functionality')
       setScreenshot(null)
-      setAttachedFiles([])
+      setAdditionalImage(null)
     } catch (err) {
       console.error('Error submitting bug report:', err)
       setError('Failed to submit bug report. Please try again.')
@@ -285,65 +336,76 @@ const BugReportModal = ({ isOpen, onClose }) => {
               </div>
             )}
 
-            {/* File Attachments */}
+            {/* File Upload Area */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Additional Attachments
+                Additional Image (Optional)
               </label>
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+              <div
+                className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md ${isDragging
+                  ? 'border-indigo-500 bg-indigo-50'
+                  : 'border-gray-300 hover:border-indigo-500'
+                  }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
                 <div className="space-y-1 text-center">
-                  <svg
-                    className="mx-auto h-12 w-12 text-gray-400"
-                    stroke="currentColor"
-                    fill="none"
-                    viewBox="0 0 48 48"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  <div className="flex text-sm text-gray-600">
-                    <label
-                      htmlFor="file-upload"
-                      className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
-                    >
-                      <span>Upload files</span>
-                      <input
-                        id="file-upload"
-                        name="file-upload"
-                        type="file"
-                        className="sr-only"
-                        multiple
-                        onChange={handleFileChange}
+                  {additionalImage ? (
+                    <div className="relative">
+                      <img
+                        src={additionalImage}
+                        alt="Additional"
+                        className="max-h-48 rounded border border-gray-300"
                       />
-                    </label>
-                    <p className="pl-1">or drag and drop</p>
-                  </div>
-                  <p className="text-xs text-gray-500">Up to 5 files, max 5MB each</p>
-                </div>
-              </div>
-
-              {/* Attached Files List */}
-              {attachedFiles.length > 0 && (
-                <ul className="mt-2 divide-y divide-gray-200">
-                  {attachedFiles.map((file, index) => (
-                    <li key={index} className="py-2 flex justify-between items-center">
-                      <span className="text-sm text-gray-500">{file.name}</span>
                       <button
                         type="button"
-                        onClick={() => removeFile(index)}
-                        className="text-red-600 hover:text-red-800"
+                        onClick={removeAdditionalImage}
+                        className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200"
                       >
-                        Remove
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                       </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+                    </div>
+                  ) : (
+                    <>
+                      <svg
+                        className="mx-auto h-12 w-12 text-gray-400"
+                        stroke="currentColor"
+                        fill="none"
+                        viewBox="0 0 48 48"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <div className="flex text-sm text-gray-600">
+                        <label
+                          htmlFor="file-upload"
+                          className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+                        >
+                          <span>Upload an image</span>
+                          <input
+                            id="file-upload"
+                            name="file-upload"
+                            type="file"
+                            className="sr-only"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                          />
+                        </label>
+                        <p className="pl-1">or drag and drop</p>
+                      </div>
+                      <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* System Information Toggle */}

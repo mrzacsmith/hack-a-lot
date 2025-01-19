@@ -7,6 +7,7 @@ const BugReports = () => {
   const [loading, setLoading] = useState(true)
   const [selectedReport, setSelectedReport] = useState(null)
   const [filter, setFilter] = useState('all') // all, new, inProgress, resolved
+  const [fullScreenImage, setFullScreenImage] = useState(null)
 
   useEffect(() => {
     const reportsRef = collection(db, 'bugReports')
@@ -196,32 +197,65 @@ const BugReports = () => {
                     </div>
                   </div>
 
-                  {/* Screenshot */}
-                  {selectedReport.screenshotUrl ? (
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-500 mb-2">Screenshot</h4>
-                      <div className="relative border border-gray-200 rounded-lg overflow-hidden">
-                        <img
-                          src={selectedReport.screenshotUrl}
-                          alt="Bug Report Screenshot"
-                          className="w-full h-auto"
-                          onError={(e) => console.error('Image load error:', e)}
-                        />
-                        <a
-                          href={selectedReport.screenshotUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md hover:bg-gray-100"
-                          title="Open in new tab"
+                  {/* Screenshots */}
+                  <div className="space-y-4">
+                    {/* Automatic Screenshot */}
+                    {selectedReport.screenshotUrl && (
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500 mb-2">Automatic Screenshot</h4>
+                        <div className="relative border border-gray-200 rounded-lg overflow-hidden">
+                          <img
+                            src={selectedReport.screenshotUrl}
+                            alt="Bug Report Screenshot"
+                            className="w-full h-auto cursor-pointer"
+                            onClick={() => setFullScreenImage(selectedReport.screenshotUrl)}
+                            onError={(e) => console.error('Image load error:', e)}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Additional Image */}
+                    {selectedReport.additionalImageUrl && (
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-500 mb-2">Additional Screenshot</h4>
+                        <div className="relative border border-gray-200 rounded-lg overflow-hidden">
+                          <img
+                            src={selectedReport.additionalImageUrl}
+                            alt="Additional Screenshot"
+                            className="w-full h-auto cursor-pointer"
+                            onClick={() => setFullScreenImage(selectedReport.additionalImageUrl)}
+                            onError={(e) => console.error('Image load error:', e)}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Full Screen Image Modal */}
+                  {fullScreenImage && (
+                    <div
+                      className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[60] cursor-pointer"
+                      onClick={() => setFullScreenImage(null)}
+                    >
+                      <div className="relative max-w-[90vw] max-h-[90vh]">
+                        <button
+                          onClick={() => setFullScreenImage(null)}
+                          className="absolute -top-12 right-0 text-white hover:text-gray-300"
                         >
-                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          <span className="sr-only">Close</span>
+                          <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                           </svg>
-                        </a>
+                        </button>
+                        <img
+                          src={fullScreenImage}
+                          alt="Full Screen Screenshot"
+                          className="max-w-full max-h-[90vh] object-contain"
+                          onClick={(e) => e.stopPropagation()}
+                        />
                       </div>
                     </div>
-                  ) : (
-                    <div className="text-sm text-gray-500">No screenshot available</div>
                   )}
 
                   {/* Attachments */}

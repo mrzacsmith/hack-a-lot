@@ -1,0 +1,45 @@
+{
+  "name": "Sisu Builder",
+  "short_name": "Sisu",
+  "description": "Build extraordinary solutions through hackathons powered by Sisu",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4AABE1",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["productivity", "development", "education"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "View Hackathons",
+      "url": "/hackathons",
+      "description": "Browse upcoming and active hackathons"
+    },
+    {
+      "name": "Dashboard",
+      "url": "/dashboard",
+      "description": "View your hackathon projects and progress"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "scope": "/",
+  "lang": "en-US"
+}

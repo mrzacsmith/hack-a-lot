@@ -607,12 +607,19 @@ const LandingPage = () => {
                 >
                   Start Building
                 </Link>
-                <Link
-                  to="/hackathons"
+                <a
+                  href="#hackathons"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById('hackathons').scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'start'
+                    });
+                  }}
                   className="inline-flex items-center px-8 py-3 border border-white text-base font-medium rounded-md text-white hover:bg-sisu-blue md:py-4 md:text-lg md:px-10"
                 >
                   Browse Hackathons
-                </Link>
+                </a>
               </div>
             </div>
           </div>

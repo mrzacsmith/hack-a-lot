@@ -55,6 +55,7 @@ const CountdownTimer = ({ endDate }) => {
 const Overview = () => {
   const [registeredHackathons, setRegisteredHackathons] = useState([])
   const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('all') // all, active, upcoming, completed, cancelled
   const auth = getAuth()
 
   useEffect(() => {
@@ -109,18 +110,48 @@ const Overview = () => {
     }).format(date)
   }
 
+  const filteredHackathons = registeredHackathons.filter(hackathon => {
+    if (filter === 'all') return !['completed', 'cancelled'].includes(hackathon.status)
+    return hackathon.status === filter
+  }).sort((a, b) => {
+    // Sort by start date in ascending order
+    return a.startDate - b.startDate
+  })
+
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Overview</h1>
 
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">Your Registered Hackathons</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold text-gray-900">Your Registered Hackathons</h2>
+        {/* Filter buttons */}
+        <div className="flex space-x-2">
+          {['all', 'active', 'upcoming', 'completed', 'cancelled'].map((filterOption) => (
+            <button
+              key={filterOption}
+              onClick={() => setFilter(filterOption)}
+              className={`px-3 py-1 rounded-full text-sm font-medium ${filter === filterOption
+                ? 'bg-indigo-100 text-indigo-800'
+                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                }`}
+            >
+              {filterOption === 'all' ? 'All' : filterOption.charAt(0).toUpperCase() + filterOption.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {loading ? (
         <div>Loading...</div>
-      ) : registeredHackathons.length === 0 ? (
-        <div className="text-gray-500">You haven't registered for any hackathons yet.</div>
+      ) : filteredHackathons.length === 0 ? (
+        <div className="text-gray-500">
+          {filter === 'all'
+            ? "You haven't registered for any active or upcoming hackathons."
+            : `You don't have any ${filter} hackathons.`}
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {registeredHackathons.map((hackathon) => (
+          {filteredHackathons.map((hackathon) => (
             <div key={hackathon.id} className="relative">
               <Link to={`/hackathons/${hackathon.id}`} className="block">
                 <div

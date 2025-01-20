@@ -4,6 +4,7 @@ import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import { toast } from 'react-hot-toast'
 import CountdownTimer from '../components/CountdownTimer'
+import SanitizedHtml from '../components/SanitizedHtml'
 
 function HackathonDetails() {
   const { id } = useParams()
@@ -177,8 +178,14 @@ function HackathonDetails() {
             </div>
 
             {/* Description */}
-            <div className="mt-6 prose prose-indigo max-w-none">
-              <p className="text-gray-600 whitespace-pre-line">{hackathon.description}</p>
+            <div className="mt-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Description</h2>
+              <div className="prose prose-indigo max-w-none">
+                <SanitizedHtml
+                  html={hackathon.description}
+                  className="text-gray-600 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+                />
+              </div>
             </div>
 
             {/* Timeline */}

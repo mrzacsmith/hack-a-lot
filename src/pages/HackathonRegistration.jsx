@@ -4,6 +4,7 @@ import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore'
 import { getAuth } from 'firebase/auth'
 import { db } from '../firebase/config'
 import { toast } from 'react-hot-toast'
+import SanitizedHtml from '../components/SanitizedHtml'
 
 const HackathonRegistration = () => {
   const { hackathonId } = useParams()
@@ -111,7 +112,7 @@ const HackathonRegistration = () => {
           </div>
 
           <div className="mt-4">
-            <p className="text-gray-600">{hackathon.description}</p>
+            <SanitizedHtml html={hackathon.description} className="text-gray-600" />
 
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>

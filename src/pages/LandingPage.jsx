@@ -5,6 +5,7 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { db } from '../firebase/config'
 import Lottie from 'lottie-react'
 import innovationAnimation from '../assets/innovation-animation.json'
+import SanitizedHtml from '../components/SanitizedHtml'
 
 const CountdownTimer = ({ endDate }) => {
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft())
@@ -536,9 +537,11 @@ const LandingPage = () => {
                         )}
                       </div>
 
-                      <p className="mt-3 text-gray-500 text-sm line-clamp-3 hover:text-gray-700">
-                        {hackathon.description}
-                      </p>
+                      <div className="mt-3 text-gray-500 text-sm overflow-hidden">
+                        <div className="line-clamp-3">
+                          <SanitizedHtml html={hackathon.description} className="prose-sm" />
+                        </div>
+                      </div>
 
                       <div className="mt-4 space-y-2">
                         {/* Registration Deadline - Moved to top */}

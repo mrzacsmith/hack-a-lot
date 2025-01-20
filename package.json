@@ -20,6 +20,12 @@
   },
   "dependencies": {
     "@react-icons/all-files": "^4.1.0",
+    "@tiptap/extension-text-align": "^2.11.2",
+    "@tiptap/extension-underline": "^2.11.2",
+    "@tiptap/pm": "^2.11.2",
+    "@tiptap/react": "^2.11.2",
+    "@tiptap/starter-kit": "^2.11.2",
+    "dompurify": "^3.2.3",
     "firebase": "^11.1.0",
     "html2canvas": "^1.4.1",
     "lottie-react": "^2.4.0",

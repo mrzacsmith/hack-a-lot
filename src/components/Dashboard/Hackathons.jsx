@@ -3,6 +3,8 @@ import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, Timestamp } 
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db } from '../../firebase/config'
 import { toast } from 'react-hot-toast'
+import RichTextEditor from '../RichTextEditor'
+import SanitizedHtml from '../SanitizedHtml'
 
 const Hackathons = () => {
   const [hackathons, setHackathons] = useState([])
@@ -297,13 +299,18 @@ const Hackathons = () => {
   }
 
   const handleEditClick = (hackathon) => {
+    // Format dates for form inputs (YYYY-MM-DD)
+    const formatDateForInput = (date) => {
+      return date instanceof Date ? date.toISOString().split('T')[0] : ''
+    }
+
     setEditingHackathon({
       ...hackathon,
-      startDate: hackathon.startDate,
+      startDate: formatDateForInput(hackathon.startDate),
       startTime: hackathon.startTime,
-      endDate: hackathon.endDate,
+      endDate: formatDateForInput(hackathon.endDate),
       endTime: hackathon.endTime,
-      registrationDeadline: hackathon.registrationDeadline
+      registrationDeadline: formatDateForInput(hackathon.registrationDeadline)
     })
     setImagePreview(hackathon.imageUrl)
     setIsEditing(true)
@@ -470,12 +477,9 @@ const Hackathons = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700">Description</label>
-              <textarea
-                required
+              <RichTextEditor
                 value={newHackathon.description}
-                onChange={(e) => setNewHackathon({ ...newHackathon, description: e.target.value })}
-                rows={3}
-                className="mt-1 block w-full rounded-md border-gray-300"
+                onChange={(html) => setNewHackathon({ ...newHackathon, description: html })}
               />
             </div>
 
@@ -817,7 +821,11 @@ const Hackathons = () => {
                 )}
               </div>
 
-              <p className="mt-4 text-sm text-gray-600">{hackathon.description}</p>
+              <div className="mt-3 text-gray-600 text-sm overflow-hidden">
+                <div className="line-clamp-3">
+                  <SanitizedHtml html={hackathon.description} className="prose-sm" />
+                </div>
+              </div>
 
               <div className="mt-4 space-y-2 text-sm text-gray-500">
                 {/* Registration Deadline - Moved to top */}
@@ -987,12 +995,9 @@ const Hackathons = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700">Description</label>
-                <textarea
-                  required
+                <RichTextEditor
                   value={editingHackathon.description}
-                  onChange={(e) => setEditingHackathon({ ...editingHackathon, description: e.target.value })}
-                  rows={3}
-                  className="mt-1 block w-full"
+                  onChange={(html) => setEditingHackathon({ ...editingHackathon, description: html })}
                 />
               </div>
 

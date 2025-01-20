@@ -8,6 +8,7 @@ const Users = () => {
   const [users, setUsers] = useState([])
   const [currentUserRole, setCurrentUserRole] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [filter, setFilter] = useState('all') // all, user, reviewer, admin
   const auth = getAuth()
 
   useEffect(() => {
@@ -73,6 +74,11 @@ const Users = () => {
     }
   }
 
+  const filteredUsers = users.filter(user => {
+    if (filter === 'all') return true
+    return user.role === filter
+  })
+
   if (currentUserRole !== 'admin' && auth.currentUser?.email !== import.meta.env.VITE_SUPER_ADMIN_EMAIL) {
     return (
       <div className="p-4">
@@ -94,6 +100,23 @@ const Users = () => {
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold text-gray-900 mb-4">Users</h1>
+
+      {/* Filter buttons */}
+      <div className="flex space-x-2 mb-4">
+        {['all', 'user', 'reviewer', 'admin'].map((filterOption) => (
+          <button
+            key={filterOption}
+            onClick={() => setFilter(filterOption)}
+            className={`px-3 py-1 rounded-full text-sm font-medium ${filter === filterOption
+              ? 'bg-indigo-100 text-indigo-800'
+              : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+              }`}
+          >
+            {filterOption === 'all' ? 'All Users' : filterOption.charAt(0).toUpperCase() + filterOption.slice(1) + 's'}
+          </button>
+        ))}
+      </div>
+
       <div className="mt-4">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -114,7 +137,7 @@ const Users = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <tr key={user.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {user.email}

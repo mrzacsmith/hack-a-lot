@@ -39,6 +39,7 @@ const Hackathons = () => {
     type: 'regular',
     duration: 60
   })
+  const [filter, setFilter] = useState('all') // all, upcoming, active, completed, cancelled
 
   const validateDates = (dates, type = 'create') => {
     const errors = {
@@ -387,6 +388,21 @@ const Hackathons = () => {
     }
   }
 
+  const filteredHackathons = hackathons.filter(hackathon => {
+    if (filter === 'all') return !['completed', 'cancelled'].includes(hackathon.status)
+    return hackathon.status === filter
+  }).sort((a, b) => {
+    // For "all" filter, sort active first, then upcoming
+    if (filter === 'all') {
+      if (a.status !== b.status) {
+        // Active comes before upcoming
+        return a.status === 'active' ? -1 : 1
+      }
+    }
+    // Sort by start date in ascending order
+    return a.startDate - b.startDate
+  })
+
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-6">
@@ -397,6 +413,22 @@ const Hackathons = () => {
         >
           Create Hackathon
         </button>
+      </div>
+
+      {/* Filter buttons */}
+      <div className="flex space-x-2 mb-6">
+        {['all', 'active', 'upcoming', 'completed', 'cancelled'].map((filterOption) => (
+          <button
+            key={filterOption}
+            onClick={() => setFilter(filterOption)}
+            className={`px-3 py-1 rounded-full text-sm font-medium ${filter === filterOption
+              ? 'bg-indigo-100 text-indigo-800'
+              : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+              }`}
+          >
+            {filterOption === 'all' ? 'Active & Upcoming' : filterOption.charAt(0).toUpperCase() + filterOption.slice(1)}
+          </button>
+        ))}
       </div>
 
       {isCreating && (
@@ -724,7 +756,7 @@ const Hackathons = () => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {hackathons.map((hackathon) => (
+        {filteredHackathons.map((hackathon) => (
           <div
             key={hackathon.id}
             className={`relative rounded-lg shadow-md overflow-hidden ${hackathon.type === 'lightning'

@@ -125,3 +125,10 @@ npm run version:specific <version>
 - If the version number isn't updating, ensure you ran `npm run deploy` instead of just `firebase deploy`
 - If deployment fails, check the Firebase Console for more detailed error messages
 - For permission issues, ensure you're logged into the correct Firebase account
+
+
+### All Command
+
+```bash
+npm run all -m="your commit message here"
+```

@@ -464,8 +464,17 @@ const LandingPage = () => {
                     className={`flex flex-col rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 relative cursor-pointer ${hackathon.type === 'lightning'
                       ? 'bg-gradient-to-r from-purple-50 to-indigo-50 border-l-4 border-indigo-500'
                       : 'bg-white'
-                      } ${hackathon.status === 'active' ? 'ring-2 ring-green-500' : ''}`}
+                      } ${hackathon.status === 'active' ? 'ring-2 ring-green-500' : ''} ${new Date() > new Date(hackathon.endDate) ? 'opacity-80' : ''
+                      }`}
                   >
+                    {/* Add OVER overlay for completed events */}
+                    {new Date() > new Date(hackathon.endDate) && (
+                      <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none select-none">
+                        <div className="transform rotate-[-35deg] bg-red-600/80 text-white text-4xl font-extrabold py-3 w-[150%] text-center shadow-lg">
+                          OVER
+                        </div>
+                      </div>
+                    )}
                     {/* Image Section */}
                     <div className="aspect-video w-full overflow-hidden">
                       {hackathon.imageUrl ? (
@@ -564,7 +573,9 @@ const LandingPage = () => {
                     </div>
 
                     <div className="px-6 py-4 bg-gray-50">
-                      {hackathon.status === 'active' ? (
+                      {new Date() > new Date(hackathon.endDate) ? (
+                        <div className="text-sm text-gray-500 text-center">Event completed</div>
+                      ) : hackathon.status === 'active' ? (
                         <div className="space-y-2">
                           <div className="text-sm text-gray-500 text-center">Event in progress</div>
                           <div className="text-xs text-gray-500 text-center">Time remaining:</div>

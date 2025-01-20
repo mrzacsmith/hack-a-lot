@@ -20,7 +20,10 @@
   },
   "dependencies": {
     "@react-icons/all-files": "^4.1.0",
+    "@tiptap/extension-color": "^2.11.2",
+    "@tiptap/extension-link": "^2.11.2",
     "@tiptap/extension-text-align": "^2.11.2",
+    "@tiptap/extension-text-style": "^2.11.2",
     "@tiptap/extension-underline": "^2.11.2",
     "@tiptap/pm": "^2.11.2",
     "@tiptap/react": "^2.11.2",

@@ -122,7 +122,7 @@ const Overview = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {registeredHackathons.map((hackathon) => (
             <div key={hackathon.id} className="relative">
-              <Link to="/dashboard/submissions" className="block">
+              <Link to={`/hackathons/${hackathon.id}`} className="block">
                 <div
                   className={`rounded-lg shadow-lg overflow-hidden h-[32rem] flex flex-col ${hackathon.status === 'active'
                     ? 'bg-green-50 border border-green-300'

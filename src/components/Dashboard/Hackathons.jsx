@@ -697,13 +697,13 @@ const Hackathons = () => {
             </div>
 
             <div className="grid">
-              <label className="block text-sm font-medium text-gray-700">Terms & Conditions URL</label>
+              <label className="block text-sm font-medium text-gray-700">Terms & Conditions</label>
               <input
-                type="url"
+                type="text"
                 value={newHackathon.termsUrl}
                 onChange={(e) => setNewHackathon({ ...newHackathon, termsUrl: e.target.value })}
-                placeholder="https://..."
-                className="mt-2 block w-full rounded-sm border border-gray-300 border-solid"
+                placeholder="Enter terms and conditions"
+                className="mt-2 block w-full rounded-md border-gray-300"
               />
             </div>
 
@@ -1134,13 +1134,13 @@ const Hackathons = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Terms & Conditions URL</label>
+                  <label className="block text-sm font-medium text-gray-700">Terms & Conditions</label>
                   <input
-                    type="url"
+                    type="text"
                     value={editingHackathon.termsUrl}
                     onChange={(e) => setEditingHackathon({ ...editingHackathon, termsUrl: e.target.value })}
-                    placeholder="https://..."
-                    className="mt-1 block w-full rounded-md border-gray-900"
+                    placeholder="Enter terms and conditions"
+                    className="mt-1 block w-full rounded-md border-gray-300"
                   />
                 </div>
               </div>

@@ -177,7 +177,6 @@ const RichTextEditor = ({ value, onChange }) => {
           <select
             onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
             className="h-9 rounded border border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-            value={editor.getAttributes('textStyle').color || '#000000'}
             title="Text Color"
           >
             {colors.map((color) => (
@@ -186,6 +185,39 @@ const RichTextEditor = ({ value, onChange }) => {
               </option>
             ))}
           </select>
+        </div>
+
+        {/* Lists */}
+        <div className="flex items-center gap-1 px-2">
+          <button
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            className={`p-2 rounded hover:bg-gray-200 ${editor.isActive('bulletList') ? 'bg-gray-200' : ''}`}
+            title="Bullet List"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="9" y1="6" x2="20" y2="6"></line>
+              <line x1="9" y1="12" x2="20" y2="12"></line>
+              <line x1="9" y1="18" x2="20" y2="18"></line>
+              <circle cx="4" cy="6" r="2"></circle>
+              <circle cx="4" cy="12" r="2"></circle>
+              <circle cx="4" cy="18" r="2"></circle>
+            </svg>
+          </button>
+
+          <button
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            className={`p-2 rounded hover:bg-gray-200 ${editor.isActive('orderedList') ? 'bg-gray-200' : ''}`}
+            title="Numbered List"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="10" y1="6" x2="20" y2="6"></line>
+              <line x1="10" y1="12" x2="20" y2="12"></line>
+              <line x1="10" y1="18" x2="20" y2="18"></line>
+              <path d="M4 6h1v4"></path>
+              <path d="M4 10h2"></path>
+              <path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path>
+            </svg>
+          </button>
         </div>
 
         {/* Link */}

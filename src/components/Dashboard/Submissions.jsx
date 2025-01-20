@@ -376,7 +376,7 @@ const Submissions = () => {
           ) : (
             <div className="space-y-4">
               {submissions.map((submission) => (
-                <li key={submission.id} className="bg-white px-4 py-4 sm:px-6 rounded-lg border border-gray-100 hover:border-gray-200">
+                <div key={submission.id} className="bg-white px-4 py-4 sm:px-6 rounded-lg border-2 border-gray-200 hover:border-indigo-200 shadow-md hover:shadow-lg transition-all">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3">
@@ -433,7 +433,7 @@ const Submissions = () => {
                       </button>
                     </div>
                   </div>
-                </li>
+                </div>
               ))}
             </div>
           )}

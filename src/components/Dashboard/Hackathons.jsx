@@ -698,12 +698,9 @@ const Hackathons = () => {
 
             <div className="grid">
               <label className="block text-sm font-medium text-gray-700">Terms & Conditions</label>
-              <input
-                type="text"
+              <RichTextEditor
                 value={newHackathon.termsUrl}
-                onChange={(e) => setNewHackathon({ ...newHackathon, termsUrl: e.target.value })}
-                placeholder="Enter terms and conditions"
-                className="mt-2 block w-full rounded-md border-gray-300"
+                onChange={(html) => setNewHackathon({ ...newHackathon, termsUrl: html })}
               />
             </div>
 
@@ -1135,12 +1132,9 @@ const Hackathons = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Terms & Conditions</label>
-                  <input
-                    type="text"
+                  <RichTextEditor
                     value={editingHackathon.termsUrl}
-                    onChange={(e) => setEditingHackathon({ ...editingHackathon, termsUrl: e.target.value })}
-                    placeholder="Enter terms and conditions"
-                    className="mt-1 block w-full rounded-md border-gray-300"
+                    onChange={(html) => setEditingHackathon({ ...editingHackathon, termsUrl: html })}
                   />
                 </div>
               </div>

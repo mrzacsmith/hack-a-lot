@@ -59,8 +59,19 @@ const BugReports = () => {
   }
 
   const filteredReports = reports.filter(report => {
-    if (filter === 'all') return true
+    if (filter === 'resolved') return report.status === 'resolved'
+    if (filter === 'all') return report.status !== 'resolved'
     return report.status === filter
+  }).sort((a, b) => {
+    // First sort by status priority
+    const statusOrder = { new: 1, inProgress: 2, resolved: 3 }
+    const statusDiff = statusOrder[a.status] - statusOrder[b.status]
+
+    // If status is the same, sort by timestamp (newest first)
+    if (statusDiff === 0) {
+      return b.timestamp - a.timestamp
+    }
+    return statusDiff
   })
 
   if (loading) {
@@ -88,10 +99,10 @@ const BugReports = () => {
       {/* Reports list */}
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
         <ul className="divide-y divide-gray-200">
-          {filteredReports.map((report) => (
-            <li key={report.id}>
+          {filteredReports.map((report, index) => (
+            <li key={report.id} className={index > 0 && report.status !== filteredReports[index - 1].status ? 'border-t-8 border-gray-100' : ''}>
               <div
-                className="px-4 py-4 sm:px-6 hover:bg-gray-50 cursor-pointer"
+                className="px-4 py-6 sm:px-6 hover:bg-gray-50 cursor-pointer"
                 onClick={() => handleReportClick(report)}
               >
                 <div className="flex items-center justify-between">
